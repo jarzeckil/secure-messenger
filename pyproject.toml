@@ -9,7 +9,7 @@ readme = "README.md"
 requires-python = ">=3.11, <3.14"
 dependencies = [
     "sqlalchemy (>=2.0.45,<3.0.0)",
-    "ruff (>=0.14.10,<0.15.0)"
+    "ruff (>=0.14.10,<0.15.0)",
 ]
 
 [tool.poetry]
@@ -38,3 +38,9 @@ quote-style = "single"
 known-first-party = ["secure_messenger"]
 # Force sorting within each import section
 force-sort-within-sections = true
+
+
+[dependency-groups]
+dev = [
+    "pytest (>=9.0.2,<10.0.0)"
+]
