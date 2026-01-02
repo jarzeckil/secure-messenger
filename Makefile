@@ -9,6 +9,7 @@ help:
 
 install: ## install dependencies
 	poetry install
+	poetry run pre-commit install
 
 format: ## auto format files
 	poetry run ruff format .
