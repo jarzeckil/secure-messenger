@@ -68,7 +68,10 @@ class Message(Base):
     )
 
     sender: Mapped['User'] = relationship(back_populates='sent_messages')
-    attachments: Mapped[list['Attachment']] = relationship(back_populates='message', cascade='all, delete-orphan')
+    attachments: Mapped[list['Attachment']] = relationship(
+        back_populates='message', cascade='all, delete-orphan'
+    )
+
 
 class MessageRecipient(Base):
     __tablename__ = 'message_recipients'
@@ -87,6 +90,7 @@ class MessageRecipient(Base):
     message: Mapped['Message'] = relationship(back_populates='recipients')
     recipient: Mapped['User'] = relationship(back_populates='received_messages')
 
+
 class Attachment(Base):
     __tablename__ = 'attachments'
 
@@ -97,4 +101,3 @@ class Attachment(Base):
     data_encrypted: Mapped[bytes] = mapped_column(LargeBinary())
 
     message: Mapped['Message'] = relationship(back_populates='attachments')
-
