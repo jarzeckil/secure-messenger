@@ -1,0 +1,40 @@
+[project]
+name = "secure-messenger"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "jarzeckil",email = "jarzeckil@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.11, <3.14"
+dependencies = [
+    "sqlalchemy (>=2.0.45,<3.0.0)",
+    "ruff (>=0.14.10,<0.15.0)"
+]
+
+[tool.poetry]
+packages = [{include = "secure_messenger", from = "src"}]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 88
+indent-width = 4
+src = ["src"]
+include = ["pyproject.toml", "src/**/*.py"]
+
+[tool.ruff.lint]
+# Select which rule categories are enabled
+# (E: pycodestyle errors, F: pyflakes, I: import-related, B: bugbears, UP: plugins)
+select = ["E", "F", "I", "UP", "B"]
+fixable = ["ALL"]
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.ruff.lint.isort]
+known-first-party = ["secure_messenger"]
+# Force sorting within each import section
+force-sort-within-sections = true
