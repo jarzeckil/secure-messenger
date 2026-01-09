@@ -19,4 +19,4 @@ COPY src ./src
 RUN useradd -m docker && chown -R docker /app
 USER docker
 
-CMD ["python", "src/main.py"]
+CMD ["python", "src/secure_messenger/main.py"]
