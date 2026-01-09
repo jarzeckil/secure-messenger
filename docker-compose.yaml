@@ -1,21 +1,59 @@
 services:
+
   postgres-db:
     image: postgres:15-alpine
-    container_name: postgres
-    ports:
-      - "5432:5432"
+    container_name: messenger_postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: messenger_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - messenger-network
+      - data-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: messenger_redis
+    networks:
+      - data-network
+
+  app:
+    build: .
+    container_name: messenger_app
+    command:
+      - sleep infinity
+    networks:
+      - data-network
+      - backend-network
+    depends_on:
+      - postgres-db
+      - redis
+    volumes:
+      - ./src:/src
+
+  nginx:
+    image: nginx:stable-alpine
+    container_name: messenger_nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - frontend-network
+      - backend-network
+    depends_on:
+      - app
 
 volumes:
   postgres_data:
 
 networks:
-  messenger-network:
+  data-network:
+    driver: bridge
+    internal: true
+  backend-network:
+    driver: bridge
+    internal: true
+  frontend-network:
     driver: bridge
