@@ -1,18 +1,15 @@
 import logging
 
-from database import engine
-from models import Base
+from src.secure_messenger.db.database import engine
+from src.secure_messenger.db.models import Base
 
 logger = logging.getLogger(__name__)
 
 
-def init_db():
+async def init_db():
     logger.info('Creating tables in database...')
 
-    Base.metadata.create_all(bind=engine)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
     logger.info('Success.')
-
-
-if __name__ == '__main__':
-    init_db()
