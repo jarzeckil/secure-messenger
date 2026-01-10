@@ -18,14 +18,13 @@ class User(Base):
     username: Mapped[str] = mapped_column(String(32), unique=True)
     password_hash: Mapped[str] = mapped_column(String())
     totp_secret: Mapped[str | None] = mapped_column(String(), nullable=True)
+
+    public_key: Mapped[str] = mapped_column(String())
+    encrypted_private_key: Mapped[bytes] = mapped_column(LargeBinary())
     salt: Mapped[bytes] = mapped_column(LargeBinary())
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
-    )
-
-    user_key: Mapped['UserKey'] = relationship(
-        back_populates='user', cascade='all, delete-orphan'
     )
 
     sent_messages: Mapped[list['Message']] = relationship(back_populates='sender')
@@ -33,20 +32,6 @@ class User(Base):
     received_messages: Mapped[list['MessageRecipient']] = relationship(
         back_populates='recipient'
     )
-
-
-class UserKey(Base):
-    __tablename__ = 'user_keys'
-
-    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey('users.id'), primary_key=True)
-    public_key: Mapped[str] = mapped_column(String())
-    encrypted_private_key: Mapped[bytes] = mapped_column(LargeBinary())
-
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
-
-    user: Mapped['User'] = relationship(back_populates='user_key')
 
 
 class Message(Base):
@@ -81,6 +66,9 @@ class MessageRecipient(Base):
     )
     message_id: Mapped[uuid.UUID] = mapped_column(ForeignKey('messages.id'))
     recipient_id: Mapped[uuid.UUID] = mapped_column(ForeignKey('users.id'), index=True)
+
+    encrypted_message_key: Mapped[bytes] = mapped_column(LargeBinary())
+
     is_read: Mapped[bool] = mapped_column(Boolean(), default=False)
 
     created_at: Mapped[datetime] = mapped_column(

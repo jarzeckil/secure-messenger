@@ -7,11 +7,11 @@ logger = logging.getLogger(__name__)
 
 
 def init_db():
-    print('Creating tables in database...')
+    logger.info('Creating tables in database...')
 
     Base.metadata.create_all(bind=engine)
 
-    print('Success.')
+    logger.info('Success.')
 
 
 if __name__ == '__main__':
