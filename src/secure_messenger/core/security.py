@@ -51,8 +51,8 @@ def _derive_key_from_password_and_salt(password: str, salt: bytes):
     Returns:
         bytes: derived AES key (SHA-256 digest)
     """
-    hash = SHA256.new(password.encode() + salt)
-    key = hash.digest()
+    h = SHA256.new(password.encode() + salt)
+    key = h.digest()
 
     return key
 
@@ -104,6 +104,14 @@ def generate_random_aes_key() -> bytes:
         bytes: random 32-byte AES key
     """
     return get_random_bytes(32)
+
+
+def generate_random_salt() -> bytes:
+    """
+    Returns:
+        bytes: random 16-byte salt
+    """
+    return get_random_bytes(16)
 
 
 def encrypt_aes_key(aes_key: bytes, public_key_pem: bytes) -> bytes:
