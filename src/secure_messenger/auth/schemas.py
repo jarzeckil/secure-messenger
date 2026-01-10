@@ -1,0 +1,26 @@
+from pydantic import BaseModel, Field, field_validator
+from zxcvbn import zxcvbn
+
+
+class UserCreateModel(BaseModel):
+    username: str = Field(..., description='Unique username', min_length=5)
+    password: str = Field(..., description='Strong password', min_length=8)
+
+    @field_validator('password')
+    @classmethod
+    def validate_password(cls, password: str) -> str:
+        results = zxcvbn(password)
+
+        score = results.get('score')
+
+        if score < 4:
+            suggestions = results.get('feedback', {}).get('suggestions', None)
+            warning = results.get('feedback').get('warning', 'Password too weak')
+
+            raise ValueError(
+                f'Password score: {score}/4. '
+                f'Warning! {warning}. '
+                f'Suggestions: {suggestions}'
+            )
+
+        return password
