@@ -19,7 +19,7 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String())
     totp_secret: Mapped[str | None] = mapped_column(String(), nullable=True)
 
-    public_key: Mapped[str] = mapped_column(String())
+    public_key: Mapped[bytes] = mapped_column(LargeBinary())
     encrypted_private_key: Mapped[bytes] = mapped_column(LargeBinary())
     salt: Mapped[bytes] = mapped_column(LargeBinary())
 
