@@ -2,6 +2,7 @@ from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
 from Crypto.Random import get_random_bytes
+from Crypto.Signature import pss
 from passlib.context import CryptContext
 
 context = CryptContext(schemes=['argon2'])
@@ -172,4 +173,36 @@ def decrypt_content(encrypted_blob: bytes, aes_key: bytes) -> bytes:
     return decrypted_content
 
 
-# TODO signature
+def generate_signature(data: bytes, private_key_pem: bytes) -> bytes:
+    """
+    Args:
+        data (bytes): message data for which the signature will be created
+        private_key_pem (bytes): private key of user sending the message
+    Returns:
+        bytes: signature of the message
+    """
+    key = RSA.import_key(private_key_pem)
+    hashed_data = SHA256.new(data)
+
+    signer = pss.new(key)
+    signature = signer.sign(hashed_data)
+
+    return signature
+
+
+def verify_signature(data: bytes, public_key_pem: bytes, signature: bytes) -> None:
+    """
+    Args:
+        data (bytes): message data for which the signature will be verified
+        public_key_pem (bytes): public key of user sending the message
+        signature (bytes): signature to be verified
+    Returns:
+        bool: verified status of signature
+    """
+
+    key = RSA.import_key(public_key_pem)
+    hashed_data = SHA256.new(data)
+
+    verifier = pss.new(key)
+
+    verifier.verify(hashed_data, signature)
