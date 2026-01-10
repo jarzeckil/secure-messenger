@@ -11,6 +11,9 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - data-network
+      - frontend-network
+    ports:
+      - "5432:5432"
 
   redis:
     image: redis:7-alpine
