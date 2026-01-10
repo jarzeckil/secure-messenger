@@ -20,4 +20,4 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-settings.DATABASE_URL = f'postgresql+asyncpg://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@db:5432/{settings.POSTGRES_DB}'
+settings.DATABASE_URL = f'postgresql+asyncpg://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@postgres-db:5432/{settings.POSTGRES_DB}'
