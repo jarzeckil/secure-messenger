@@ -2,17 +2,18 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from secure_messenger.auth.schemas import UserCreateModel
+from secure_messenger.auth.schemas import UserLoginModel, UserRegisterModel
 from secure_messenger.core import security
 from secure_messenger.db.models import User
 
 
-async def register_user(db: AsyncSession, user_data: UserCreateModel) -> User:
+async def register_user(db: AsyncSession, user_data: UserRegisterModel) -> User:
     username = user_data.username
     password = user_data.password
 
     # check if username exists
-    result = await db.execute(select(User).where(User.username == username))
+    query = select(User).where(User.username == username)
+    result = await db.execute(query)
     if result.scalar():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -36,3 +37,22 @@ async def register_user(db: AsyncSession, user_data: UserCreateModel) -> User:
     await db.refresh(new_user)
 
     return new_user
+
+
+async def login_user(db: AsyncSession, user_login_data: UserLoginModel) -> None:
+    username = user_login_data.username
+    password = user_login_data.password
+    verified = False
+
+    # search for user
+    query = select(User).where(User.username == username)
+    result = await db.execute(query)
+    user: User = result.scalar()
+    if user:
+        # verify password
+        verified = security.verify_password(password, user.password_hash)
+
+    if not user or not verified:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail='Wrong username or password.'
+        )

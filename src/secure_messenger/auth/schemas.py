@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field, field_validator
 from zxcvbn import zxcvbn
 
 
-class UserCreateModel(BaseModel):
+class UserRegisterModel(BaseModel):
     username: str = Field(..., description='Unique username', min_length=5)
     password: str = Field(..., description='Strong password', min_length=8)
 
@@ -13,7 +13,7 @@ class UserCreateModel(BaseModel):
 
         score = results.get('score')
 
-        if score < 4:
+        if score < 3:
             suggestions = results.get('feedback', {}).get('suggestions', None)
             warning = results.get('feedback').get('warning', 'Password too weak')
 
@@ -24,3 +24,8 @@ class UserCreateModel(BaseModel):
             )
 
         return password
+
+
+class UserLoginModel(BaseModel):
+    username: str = Field(..., description='Username')
+    password: str = Field(..., description='Password')
