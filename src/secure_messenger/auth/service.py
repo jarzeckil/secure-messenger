@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -39,7 +41,7 @@ async def register_user(db: AsyncSession, user_data: UserRegisterModel) -> User:
     return new_user
 
 
-async def login_user(db: AsyncSession, user_login_data: UserLoginModel) -> None:
+async def login_user(db: AsyncSession, user_login_data: UserLoginModel) -> UUID:
     username = user_login_data.username
     password = user_login_data.password
     verified = False
@@ -56,3 +58,5 @@ async def login_user(db: AsyncSession, user_login_data: UserLoginModel) -> None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail='Wrong username or password.'
         )
+
+    # TODO return user object

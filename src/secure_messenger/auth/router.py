@@ -23,4 +23,6 @@ async def register(user_data: UserRegisterModel, db: AsyncSession = Depends(get_
 async def login(user_login_data: UserLoginModel, db: AsyncSession = Depends(get_db)):
     await login_user(db, user_login_data)
 
+    # TODO cookies
+
     return {'message': 'Logged-in successfully'}
