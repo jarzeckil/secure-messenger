@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 async def register_user(db: AsyncSession, user_data: UserRegisterModel) -> User:
+    """Registers a new user in the database."""
     username = user_data.username
     password = user_data.password
 
@@ -51,6 +52,7 @@ async def register_user(db: AsyncSession, user_data: UserRegisterModel) -> User:
 async def login_user(
     db: AsyncSession, client: redis.Redis, user_login_data: UserLoginModel
 ) -> UUID:
+    """Authenticates a user and creates a session."""
     username = user_login_data.username
     password = user_login_data.password
     verified = False
@@ -75,6 +77,7 @@ async def login_user(
 
 
 async def create_user_session(client: redis.Redis, user_id: UUID, username: str):
+    """Creates a new session for the user in Redis."""
     session_id = uuid.uuid4()
 
     user_data = {'user_id': str(user_id), 'username': username}
