@@ -1,3 +1,5 @@
+from unittest.mock import AsyncMock
+
 from fastapi import HTTPException
 import pytest
 from sqlalchemy import select
@@ -5,6 +7,11 @@ from sqlalchemy import select
 from secure_messenger.auth import service
 from secure_messenger.auth.schemas import UserLoginModel, UserRegisterModel
 from secure_messenger.db.models import User
+
+
+@pytest.fixture
+def mock_redis():
+    return AsyncMock()
 
 
 @pytest.mark.asyncio
@@ -44,7 +51,7 @@ async def test_register_user_duplicate(db_session):
 
 
 @pytest.mark.asyncio
-async def test_login_user_success(db_session):
+async def test_login_user_success(db_session, mock_redis):
     # Register first
     user_data = UserRegisterModel(
         username='loginuser', password='fdvsmoitawjoijt23184789812374oadsf'
@@ -55,11 +62,12 @@ async def test_login_user_success(db_session):
         username='loginuser', password='fdvsmoitawjoijt23184789812374oadsf'
     )
     # Should not raise
-    await service.login_user(db_session, login_data)
+    await service.login_user(db_session, mock_redis, login_data)
+    mock_redis.set.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_login_user_wrong_password(db_session):
+async def test_login_user_wrong_password(db_session, mock_redis):
     user_data = UserRegisterModel(
         username='wrongpassuser', password='fdvsmoitawjoijt23184789812374oadsf'
     )
@@ -68,17 +76,18 @@ async def test_login_user_wrong_password(db_session):
     login_data = UserLoginModel(username='wrongpassuser', password='fake')
 
     with pytest.raises(HTTPException) as excinfo:
-        await service.login_user(db_session, login_data)
+        await service.login_user(db_session, mock_redis, login_data)
 
-    assert excinfo.value.status_code == 404
+    assert excinfo.value.status_code == 401
     assert 'Wrong username or password' in excinfo.value.detail
+    mock_redis.set.assert_not_called()
 
 
 @pytest.mark.asyncio
-async def test_login_user_not_found(db_session):
+async def test_login_user_not_found(db_session, mock_redis):
     login_data = UserLoginModel(username='nonexistent', password='password')
 
     with pytest.raises(HTTPException) as excinfo:
-        await service.login_user(db_session, login_data)
+        await service.login_user(db_session, mock_redis, login_data)
 
-    assert excinfo.value.status_code == 404
+    assert excinfo.value.status_code == 401
