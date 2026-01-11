@@ -6,6 +6,7 @@ from src.secure_messenger.core.config import settings
 from src.secure_messenger.db.init_db import init_db
 
 from secure_messenger.db.database import engine
+from secure_messenger.db.redis_client import client as redis_client
 
 
 @asynccontextmanager
@@ -17,6 +18,7 @@ async def lifespan(app: FastAPI):
 
     # app closes
     engine.dispose()
+    redis_client.close()
 
 
 app = FastAPI(title=settings.PROJECT_NAME, lifespan=lifespan)
