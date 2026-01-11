@@ -17,6 +17,7 @@ auth_router = APIRouter()
 
 @auth_router.post('/register', status_code=status.HTTP_201_CREATED)
 async def register(user_data: UserRegisterModel, db: AsyncSession = Depends(get_db)):
+    """Registration endpoint."""
     new_user = await register_user(db, user_data)
 
     return {
@@ -33,6 +34,7 @@ async def login(
     db: AsyncSession = Depends(get_db),
     redis_client: redis.Redis = Depends(get_redis),
 ):
+    """Login endpoint."""
     session_id = await login_user(db, redis_client, user_login_data)
 
     response.set_cookie(
@@ -51,6 +53,7 @@ async def login(
 async def logout(
     request: Request, response: Response, redis_client: redis.Redis = Depends(get_redis)
 ):
+    """Logout endpoint."""
     session_id = request.cookies.get('session_id')
 
     if session_id:
@@ -69,6 +72,7 @@ async def logout(
 async def get_current_user(
     request: Request, redis_client: redis.Redis = Depends(get_redis)
 ) -> UUID:
+    """Dependency to get the current authenticated user."""
     session_id = request.cookies.get('session_id')
     if not session_id:
         raise HTTPException(
