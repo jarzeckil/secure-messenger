@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends, status
+import json
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import Response
 import redis.asyncio as redis
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -42,3 +45,43 @@ async def login(
     )
 
     return {'message': 'Logged-in successfully'}
+
+
+@auth_router.post('/logout', status_code=status.HTTP_200_OK)
+async def logout(
+    request: Request, response: Response, redis_client: redis.Redis = Depends(get_redis)
+):
+    session_id = request.cookies.get('session_id')
+
+    if session_id:
+        await redis_client.delete(f'session:{session_id}')
+
+    response.delete_cookie(
+        key='session_id',
+        httponly=True,
+        secure=True,
+        samesite='lax',
+    )
+
+    return {'message': 'Logged out successfully'}
+
+
+async def get_current_user(
+    request: Request, redis_client: redis.Redis = Depends(get_redis)
+) -> UUID:
+    session_id = request.cookies.get('session_id')
+    if not session_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail='Not authenticated'
+        )
+
+    user_data = await redis_client.get(f'session:{session_id}')
+    user_id = json.load(user_data).get('user_id')
+
+    if not user_id:
+        if not session_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail='Session expired'
+            )
+
+    return UUID(user_id)
