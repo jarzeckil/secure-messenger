@@ -29,3 +29,11 @@ class UserRegisterModel(BaseModel):
 class UserLoginModel(BaseModel):
     username: str = Field(..., description='Username')
     password: str = Field(..., description='Password')
+
+
+class UserPasswordModel(BaseModel):
+    password: str = Field(..., description='Password')
+
+
+class UserOtpModel(BaseModel):
+    code: str = Field(..., description='OTP code')
