@@ -18,6 +18,7 @@ class User(Base):
     username: Mapped[str] = mapped_column(String(32), unique=True)
     password_hash: Mapped[str] = mapped_column(String())
     totp_secret: Mapped[str | None] = mapped_column(String(), nullable=True)
+    totp_enabled: Mapped[bool] = mapped_column(Boolean(), default=False)
 
     public_key: Mapped[bytes] = mapped_column(LargeBinary())
     encrypted_private_key: Mapped[bytes] = mapped_column(LargeBinary())
