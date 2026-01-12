@@ -7,6 +7,8 @@ from passlib.context import CryptContext
 
 context = CryptContext(schemes=['argon2'])
 
+# TODO - change SHA256 to Argon2
+
 
 def get_password_hash(plain_password: str) -> str:
     """
