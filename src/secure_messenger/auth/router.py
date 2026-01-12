@@ -95,7 +95,7 @@ async def setup_2fa(
     redis_client: redis.Redis = Depends(get_redis),
 ):
     user_id = await get_current_user(request, redis_client)
-
+    # TODO - add backup codes
     totp_secret, qr = await generate_totp_secret(db, user_id, user_password_data)
 
     return {'totp_secret': totp_secret, 'qr': qr}
