@@ -3,6 +3,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import Response
+from fastapi_limiter.depends import RateLimiter
 import redis.asyncio as redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -40,7 +41,11 @@ async def register(user_data: UserRegisterModel, db: AsyncSession = Depends(get_
     }
 
 
-@auth_router.post('/login', status_code=status.HTTP_200_OK)
+@auth_router.post(
+    '/login',
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(RateLimiter(times=5, seconds=60))],
+)
 async def login(
     response: Response,
     user_login_data: UserLoginModel,
@@ -110,7 +115,11 @@ async def enable_2fa(
     return {'message': '2fa enabled successfully'}
 
 
-@auth_router.post('/2fa/verify', status_code=status.HTTP_200_OK)
+@auth_router.post(
+    '/2fa/verify',
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(RateLimiter(times=5, seconds=60))],
+)
 async def verify_2fa(
     request: Request,
     user_otp_data: UserOtpModel,

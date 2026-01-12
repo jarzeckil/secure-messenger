@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi_limiter import FastAPILimiter
 from src.secure_messenger.auth.router import auth_router
 from src.secure_messenger.core.config import settings
 from src.secure_messenger.db.init_db import init_db
@@ -13,6 +14,8 @@ from secure_messenger.db.redis_client import client as redis_client
 async def lifespan(app: FastAPI):
     # initialize tables if they don't exist
     await init_db()
+
+    await FastAPILimiter.init(redis_client)
 
     yield
 
