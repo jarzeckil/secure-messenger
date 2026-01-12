@@ -8,7 +8,10 @@ import redis.asyncio as redis
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from secure_messenger.auth.schemas import UserLoginModel, UserRegisterModel
+from secure_messenger.auth.schemas import (
+    UserLoginModel,
+    UserRegisterModel,
+)
 from secure_messenger.core import security
 from secure_messenger.core.config import settings
 from secure_messenger.db.models import User
@@ -51,7 +54,7 @@ async def register_user(db: AsyncSession, user_data: UserRegisterModel) -> User:
 
 async def login_user(
     db: AsyncSession, client: redis.Redis, user_login_data: UserLoginModel
-) -> UUID:
+) -> tuple[UUID, bool]:
     """Authenticates a user and creates a session."""
     username = user_login_data.username
     password = user_login_data.password
@@ -71,20 +74,27 @@ async def login_user(
             detail='Wrong username or password.',
         )
 
-    session_id = await create_user_session(client, user.id, user.username)
+    session_id = await create_user_session(
+        client, user.id, user.username, user.totp_enabled
+    )
 
-    return session_id
+    return session_id, user.totp_enabled
 
 
-async def create_user_session(client: redis.Redis, user_id: UUID, username: str):
+async def create_user_session(
+    client: redis.Redis, user_id: UUID, username: str, user_2fa: bool
+):
     """Creates a new session for the user in Redis."""
     session_id = uuid.uuid4()
 
-    user_data = {'user_id': str(user_id), 'username': username}
+    session_data = {'user_id': str(user_id), 'username': username}
+
+    if user_2fa:
+        session_data['pending_2fa'] = 'True'
 
     await client.set(
         name=f'session:{session_id}',
-        value=json.dumps(user_data),
+        value=json.dumps(session_data),
         ex=settings.MAX_SESSION_AGE,
     )
     logger.info(f'Created session {session_id} for user {user_id} ({username})')
