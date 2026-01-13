@@ -33,7 +33,7 @@ async def register_user(db: AsyncSession, user_data: UserRegisterModel) -> User:
             detail='User with this username already exists',
         )
 
-    public_key, private_key = security.generate_rsa_key_pair()
+    private_key, public_key = security.generate_rsa_key_pair()
 
     salt = security.generate_random_salt()
 
@@ -73,21 +73,33 @@ async def login_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail='Wrong username or password.',
         )
+    private_key_encrypted = user.encrypted_private_key
+    private_key_pem = security.decrypt_private_key(
+        private_key_encrypted, password, user.salt
+    )
 
     session_id = await create_user_session(
-        client, user.id, user.username, user.totp_enabled
+        client, user.id, user.username, private_key_pem, user.totp_enabled
     )
 
     return session_id, user.totp_enabled
 
 
 async def create_user_session(
-    client: redis.Redis, user_id: UUID, username: str, user_2fa: bool
+    client: redis.Redis,
+    user_id: UUID,
+    username: str,
+    private_key_pem: bytes,
+    user_2fa: bool,
 ):
     """Creates a new session for the user in Redis."""
     session_id = uuid.uuid4()
 
-    session_data = {'user_id': str(user_id), 'username': username}
+    session_data = {
+        'user_id': str(user_id),
+        'username': username,
+        'private_key': private_key_pem.decode(),
+    }
 
     if user_2fa:
         session_data['pending_2fa'] = 'True'
