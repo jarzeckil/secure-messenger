@@ -42,3 +42,6 @@ async def get_inbox(
     messages = await get_user_messages(db, current_user, skip, limit)
 
     return messages
+
+
+# TODO /messages/delete
