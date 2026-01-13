@@ -44,7 +44,7 @@ async def get_current_user_id(
     Returns:
         tuple[str, dict, str]: user_id, user_data, session_id
     """
-    session_id: str = request.cookies['session_id']
+    session_id: str = request.cookies.get('session_id')
     if not session_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail='Not authenticated'
