@@ -1,3 +1,4 @@
+from argon2.low_level import Type, hash_secret_raw
 from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
@@ -6,8 +7,6 @@ from Crypto.Signature import pss
 from passlib.context import CryptContext
 
 context = CryptContext(schemes=['argon2'])
-
-# TODO - change SHA256 to Argon2
 
 
 def get_password_hash(plain_password: str) -> str:
@@ -53,8 +52,15 @@ def _derive_key_from_password_and_salt(password: str, salt: bytes):
     Returns:
         bytes: derived AES key (SHA-256 digest)
     """
-    h = SHA256.new(password.encode() + salt)
-    key = h.digest()
+    key = hash_secret_raw(
+        secret=password.encode(),
+        salt=salt,
+        time_cost=3,
+        memory_cost=65536,
+        parallelism=1,
+        hash_len=32,
+        type=Type.ID,
+    )
 
     return key
 
