@@ -33,7 +33,7 @@ async def register_user(db: AsyncSession, user_data: UserRegisterModel) -> User:
             detail='User with this username already exists',
         )
 
-    public_key, private_key = security.generate_rsa_key_pair()
+    private_key, public_key = security.generate_rsa_key_pair()
 
     salt = security.generate_random_salt()
 
