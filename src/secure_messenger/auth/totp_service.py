@@ -74,9 +74,12 @@ async def login_with_totp(
         user_id (UUID): User ID
         user_otp_data (UserOtpModel): User OTP data
     """
-    user: User = await verify_totp(db, user_id, user_otp_data)
+    await verify_totp(db, user_id, user_otp_data)
 
-    session_data = {'user_id': str(user_id), 'username': user.username}
+    raw_session_data = await client.get(f'session:{session_id}')
+    session_data = json.loads(raw_session_data)
+
+    del session_data['pending_2fa']
 
     await client.set(
         name=f'session:{session_id}',
