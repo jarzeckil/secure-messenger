@@ -1,12 +1,14 @@
-import json
-from uuid import UUID
-
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import Response
 from fastapi_limiter.depends import RateLimiter
 import redis.asyncio as redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from secure_messenger.auth.dependencies import (
+    CurrentUser,
+    get_current_user,
+    get_current_user_id,
+)
 from secure_messenger.auth.schemas import (
     UserLoginModel,
     UserOtpModel,
@@ -103,9 +105,11 @@ async def setup_2fa(
     Returns:
         dict: TOTP secret and QR code
     """
-    user_id = await get_current_user(request, redis_client)
+    current_user: CurrentUser = await get_current_user(request, redis_client)
     # TODO - add backup codes
-    totp_secret, qr = await generate_totp_secret(db, user_id, user_password_data)
+    totp_secret, qr = await generate_totp_secret(
+        db, current_user.user_id, user_password_data
+    )
 
     return {'totp_secret': totp_secret, 'qr': qr}
 
@@ -126,9 +130,9 @@ async def enable_2fa(
     Returns:
         dict: Success message
     """
-    user_id = await get_current_user(request, redis_client)
+    current_user: CurrentUser = await get_current_user(request, redis_client)
 
-    await enable_totp(db, user_id, user_otp_data)
+    await enable_totp(db, current_user.user_id, user_otp_data)
 
     return {'message': '2fa enabled successfully'}
 
@@ -163,49 +167,3 @@ async def verify_2fa(
     await login_with_totp(db, redis_client, session_id, user_id, user_otp_data)
 
     return {'message': 'Successfully verified with 2fa'}
-
-
-async def get_current_user(
-    request: Request,
-    redis_client: redis.Redis,
-) -> UUID:
-    """Dependency to get the current authenticated user."""
-    user_id, user_data, session_id = await get_current_user_id(request, redis_client)
-    otp_pending = user_data.get('pending_2fa')
-
-    if not user_id:
-        if not session_id:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail='Session expired'
-            )
-
-    if otp_pending == 'True':
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail='2fa verification required'
-        )
-
-    return UUID(user_id)
-
-
-async def get_current_user_id(request: Request, redis_client: redis.Redis):
-    """
-    Args:
-        request (Request): The request object
-        redis_client (redis.Redis): Redis client
-    Returns:
-        tuple[str, dict, str]: user_id, user_data, session_id
-    """
-    session_id = request.cookies.get('session_id')
-    if not session_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail='Not authenticated'
-        )
-    user_raw_data = await redis_client.get(f'session:{session_id}')
-    if not user_raw_data:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Session doesn't exist"
-        )
-    user_data = json.loads(user_raw_data)
-    user_id = user_data.get('user_id')
-
-    return user_id, user_data, session_id
