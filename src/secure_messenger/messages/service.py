@@ -2,13 +2,14 @@ from collections.abc import Sequence
 import logging
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from secure_messenger.auth.dependencies import CurrentUser
 from secure_messenger.core import security
 from secure_messenger.db.models import Message, MessageRecipient, User
-from secure_messenger.messages.schemas import SendMessageModel
+from secure_messenger.messages.schemas import SendMessageModel, ShowMessageModel
 
 logger = logging.getLogger(__name__)
 
@@ -66,3 +67,53 @@ async def send_message(
         raise e
 
     return missing_users
+
+
+async def get_user_messages(
+    db: AsyncSession, current_user: CurrentUser, skip: int, limit: int
+) -> list[ShowMessageModel]:
+    query = (
+        select(MessageRecipient)
+        .options(joinedload(MessageRecipient.message).joinedload(Message.sender))
+        .where(MessageRecipient.recipient_id == current_user.user_id)
+        .order_by(desc(MessageRecipient.created_at))
+        .offset(skip)
+        .limit(limit)
+    )
+
+    result = await db.execute(query)
+    recipients: Sequence[MessageRecipient] = result.scalars().all()
+
+    messages_response = []
+
+    for recipient in recipients:
+        try:
+            aes_key = security.decrypt_aes_key(
+                recipient.encrypted_message_key, current_user.private_key
+            )
+            decrypted_content = security.decrypt_content(
+                recipient.message.content_encrypted, aes_key
+            )
+            messages_response.append(
+                ShowMessageModel(
+                    id=recipient.message.id,
+                    sender_username=recipient.message.sender.username,
+                    text_content=decrypted_content.decode(),
+                    is_read=recipient.is_read,
+                    timestamp=recipient.message.created_at,
+                )
+            )
+        except (ValueError, TypeError, UnicodeDecodeError) as e:
+            logger.error(f'Error decrypting message {recipient.message.id}: {e}')
+
+            messages_response.append(
+                ShowMessageModel(
+                    id=recipient.message.id,
+                    sender_username=recipient.message.sender.username,
+                    text_content='[Błąd deszyfrowania wiadomości]',
+                    is_read=recipient.is_read,
+                    timestamp=recipient.message.created_at,
+                )
+            )
+
+    return messages_response
