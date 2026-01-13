@@ -94,6 +94,15 @@ async def setup_2fa(
     db: AsyncSession = Depends(get_db),
     redis_client: redis.Redis = Depends(get_redis),
 ):
+    """
+    Args:
+        request (Request): The request object
+        user_password_data (UserPasswordModel): The user's password data
+        db (AsyncSession): Database session
+        redis_client (redis.Redis): Redis client
+    Returns:
+        dict: TOTP secret and QR code
+    """
     user_id = await get_current_user(request, redis_client)
     # TODO - add backup codes
     totp_secret, qr = await generate_totp_secret(db, user_id, user_password_data)
@@ -108,6 +117,15 @@ async def enable_2fa(
     db: AsyncSession = Depends(get_db),
     redis_client: redis.Redis = Depends(get_redis),
 ):
+    """
+    Args:
+        request (Request): The request object
+        user_otp_data (UserOtpModel): The user's OTP data
+        db (AsyncSession): Database session
+        redis_client (redis.Redis): Redis client
+    Returns:
+        dict: Success message
+    """
     user_id = await get_current_user(request, redis_client)
 
     await enable_totp(db, user_id, user_otp_data)
@@ -126,6 +144,15 @@ async def verify_2fa(
     db: AsyncSession = Depends(get_db),
     redis_client: redis.Redis = Depends(get_redis),
 ):
+    """
+    Args:
+        request (Request): The request object
+        user_otp_data (UserOtpModel): The user's OTP data
+        db (AsyncSession): Database session
+        redis_client (redis.Redis): Redis client
+    Returns:
+        dict: Success message
+    """
     user_id, _, session_id = await get_current_user_id(request, redis_client)
     if not user_id:
         if not session_id:
@@ -161,6 +188,13 @@ async def get_current_user(
 
 
 async def get_current_user_id(request: Request, redis_client: redis.Redis):
+    """
+    Args:
+        request (Request): The request object
+        redis_client (redis.Redis): Redis client
+    Returns:
+        tuple[str, dict, str]: user_id, user_data, session_id
+    """
     session_id = request.cookies.get('session_id')
     if not session_id:
         raise HTTPException(

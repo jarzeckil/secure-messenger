@@ -18,6 +18,14 @@ from secure_messenger.db.models import User
 async def generate_totp_secret(
     db: AsyncSession, user_id: UUID, user_password_data: UserPasswordModel
 ) -> tuple[str, str]:
+    """
+    Args:
+        db (AsyncSession): Database session
+        user_id (UUID): User ID
+        user_password_data (UserPasswordModel): User password data
+    Returns:
+        tuple[str, str]: TOTP secret and QR code base64
+    """
     # verify password
     user: User = await db.get(User, user_id)
     user_password = user.password_hash
@@ -39,6 +47,12 @@ async def generate_totp_secret(
 
 
 async def enable_totp(db: AsyncSession, user_id: UUID, user_otp_data: UserOtpModel):
+    """
+    Args:
+        db (AsyncSession): Database session
+        user_id (UUID): User ID
+        user_otp_data (UserOtpModel): User OTP data
+    """
     user: User = await verify_totp(db, user_id, user_otp_data)
 
     user.totp_enabled = True
@@ -52,6 +66,14 @@ async def login_with_totp(
     user_id: UUID,
     user_otp_data: UserOtpModel,
 ):
+    """
+    Args:
+        db (AsyncSession): Database session
+        client (redis.Redis): Redis client
+        session_id (UUID): Session ID
+        user_id (UUID): User ID
+        user_otp_data (UserOtpModel): User OTP data
+    """
     user: User = await verify_totp(db, user_id, user_otp_data)
 
     session_data = {'user_id': str(user_id), 'username': user.username}
@@ -65,6 +87,14 @@ async def login_with_totp(
 
 
 async def verify_totp(db: AsyncSession, user_id: UUID, user_otp_data: UserOtpModel):
+    """
+    Args:
+        db (AsyncSession): Database session
+        user_id (UUID): User ID
+        user_otp_data (UserOtpModel): User OTP data
+    Returns:
+        User: User object
+    """
     user: User = await db.get(User, user_id)
     otp_code = user_otp_data.code
 
@@ -80,6 +110,13 @@ async def verify_totp(db: AsyncSession, user_id: UUID, user_otp_data: UserOtpMod
 
 
 def generate_totp_qr_code(totp_secret: str, user: User) -> str:
+    """
+    Args:
+        totp_secret (str): TOTP secret
+        user (User): User object
+    Returns:
+        str: QR code base64
+    """
     totp = pyotp.TOTP(totp_secret)
     uri = totp.provisioning_uri(name=user.username, issuer_name=settings.PROJECT_NAME)
 
