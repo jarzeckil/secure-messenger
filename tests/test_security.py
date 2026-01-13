@@ -118,3 +118,12 @@ def test_signature_verification_fail():
 
     with pytest.raises(ValueError):
         security.verify_signature(wrong_data, public_pem, signature)
+
+
+def test_salt_generation():
+    salt1 = security.generate_random_salt()
+    salt2 = security.generate_random_salt()
+
+    assert isinstance(salt1, bytes)
+    assert len(salt1) == 16
+    assert salt1 != salt2

@@ -18,6 +18,10 @@ dependencies = [
     "asyncpg (>=0.31.0,<0.32.0)",
     "pydantic-settings (>=2.12.0,<3.0.0)",
     "argon2-cffi (>=25.1.0,<26.0.0)",
+    "zxcvbn (>=4.5.0,<5.0.0)",
+    "pyotp (>=2.9.0,<3.0.0)",
+    "qrcode[pil] (>=8.2,<9.0)",
+    "fastapi-limiter (>=0.1.6,<0.2.0)",
 ]
 
 [tool.poetry]
@@ -31,13 +35,24 @@ build-backend = "poetry.core.masonry.api"
 line-length = 88
 indent-width = 4
 src = ["src"]
-include = ["pyproject.toml", "src/**/*.py"]
+include = ["pyproject.toml", "src/**/*.py", "tests/*"]
 
 [tool.ruff.lint]
 # Select which rule categories are enabled
 # (E: pycodestyle errors, F: pyflakes, I: import-related, B: bugbears, UP: plugins)
 select = ["E", "F", "I", "UP", "B"]
 fixable = ["ALL"]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.params.Depends",
+    "fastapi.Query",
+    "fastapi.Path",
+    "fastapi.Body",
+    "fastapi.Security",
+    "fastapi.Header",
+]
 
 [tool.ruff.format]
 quote-style = "single"
@@ -54,3 +69,12 @@ dev = [
     "ruff (>=0.14.10,<0.15.0)",
     "pre-commit (>=4.5.1,<5.0.0)",
 ]
+test = [
+    "pytest-asyncio (>=1.3.0,<2.0.0)",
+    "aiosqlite (>=0.22.1,<0.23.0)",
+    "httpx (>=0.28.1,<0.29.0)"
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
