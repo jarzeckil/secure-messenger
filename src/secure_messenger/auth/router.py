@@ -31,7 +31,7 @@ from secure_messenger.db.redis_client import get_redis
 auth_router = APIRouter()
 
 
-@auth_router.post('/register', status_code=status.HTTP_201_CREATED)
+@auth_router.post('/auth/register', status_code=status.HTTP_201_CREATED)
 async def register(user_data: UserRegisterModel, db: AsyncSession = Depends(get_db)):
     """Registration endpoint."""
     new_user = await register_user(db, user_data)
@@ -44,7 +44,7 @@ async def register(user_data: UserRegisterModel, db: AsyncSession = Depends(get_
 
 
 @auth_router.post(
-    '/login',
+    '/auth/login',
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(RateLimiter(times=5, seconds=60))],
 )
@@ -69,7 +69,7 @@ async def login(
     return {'message': 'Logged-in successfully', 'require_2fa': otp_required}
 
 
-@auth_router.post('/logout', status_code=status.HTTP_200_OK)
+@auth_router.post('/auth/logout', status_code=status.HTTP_200_OK)
 async def logout(
     request: Request, response: Response, redis_client: redis.Redis = Depends(get_redis)
 ):
@@ -89,7 +89,7 @@ async def logout(
     return {'message': 'Logged out successfully'}
 
 
-@auth_router.post('/2fa/setup', status_code=status.HTTP_200_OK)
+@auth_router.post('/auth/2fa/setup', status_code=status.HTTP_200_OK)
 async def setup_2fa(
     request: Request,
     user_password_data: UserPasswordModel,
@@ -106,7 +106,7 @@ async def setup_2fa(
         dict: TOTP secret and QR code
     """
     current_user: CurrentUser = await get_current_user(request, redis_client)
-    # TODO - add backup codes
+
     totp_secret, qr = await generate_totp_secret(
         db, current_user.user_id, user_password_data
     )
@@ -114,7 +114,7 @@ async def setup_2fa(
     return {'totp_secret': totp_secret, 'qr': qr}
 
 
-@auth_router.post('/2fa/enable', status_code=status.HTTP_200_OK)
+@auth_router.post('/auth/2fa/enable', status_code=status.HTTP_200_OK)
 async def enable_2fa(
     request: Request,
     user_otp_data: UserOtpModel,
@@ -138,7 +138,7 @@ async def enable_2fa(
 
 
 @auth_router.post(
-    '/2fa/verify',
+    '/auth/2fa/verify',
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(RateLimiter(times=5, seconds=60))],
 )
