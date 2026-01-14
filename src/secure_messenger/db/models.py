@@ -30,14 +30,14 @@ class User(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    username: Mapped[str] = mapped_column(String(32), unique=True)
-    password_hash: Mapped[str] = mapped_column(String())
+    username: Mapped[str] = mapped_column(String(32), unique=True, nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(), nullable=False)
     totp_secret: Mapped[str | None] = mapped_column(String(), nullable=True)
     totp_enabled: Mapped[bool] = mapped_column(Boolean(), default=False)
 
-    public_key: Mapped[bytes] = mapped_column(LargeBinary())
-    encrypted_private_key: Mapped[bytes] = mapped_column(LargeBinary())
-    salt: Mapped[bytes] = mapped_column(LargeBinary())
+    public_key: Mapped[bytes] = mapped_column(LargeBinary(), nullable=False)
+    encrypted_private_key: Mapped[bytes] = mapped_column(LargeBinary(), nullable=False)
+    salt: Mapped[bytes] = mapped_column(LargeBinary(), nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
@@ -56,9 +56,11 @@ class Message(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    sender_id: Mapped[uuid.UUID] = mapped_column(ForeignKey('users.id'), index=True)
-    content_encrypted: Mapped[bytes] = mapped_column(LargeBinary())
-    signature: Mapped[bytes] = mapped_column(LargeBinary())
+    sender_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey('users.id'), index=True, nullable=False
+    )
+    content_encrypted: Mapped[bytes] = mapped_column(LargeBinary(), nullable=False)
+    signature: Mapped[bytes] = mapped_column(LargeBinary(), nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
@@ -80,10 +82,12 @@ class MessageRecipient(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    message_id: Mapped[uuid.UUID] = mapped_column(ForeignKey('messages.id'))
+    message_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey('messages.id'), nullable=False
+    )
     recipient_id: Mapped[uuid.UUID] = mapped_column(ForeignKey('users.id'), index=True)
 
-    encrypted_message_key: Mapped[bytes] = mapped_column(LargeBinary())
+    encrypted_message_key: Mapped[bytes] = mapped_column(LargeBinary(), nullable=False)
 
     is_read: Mapped[bool] = mapped_column(Boolean(), default=False)
 
@@ -101,11 +105,20 @@ class Attachment(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    message_id: Mapped[uuid.UUID] = mapped_column(ForeignKey('messages.id'))
-    data_encrypted: Mapped[bytes] = deferred(mapped_column(LargeBinary()))
+    message_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey('messages.id'), nullable=False
+    )
+    data_encrypted: Mapped[bytes] = deferred(
+        mapped_column(LargeBinary(), nullable=False)
+    )
+    encrypted_data_hash: Mapped[bytes] = mapped_column(LargeBinary(), nullable=False)
 
     filename: Mapped[str] = mapped_column(String, nullable=False)
     content_type: Mapped[str] = mapped_column(String, nullable=False)
     size: Mapped[int] = mapped_column(Integer, nullable=False)
 
     message: Mapped['Message'] = relationship(back_populates='attachments')
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
