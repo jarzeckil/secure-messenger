@@ -89,7 +89,9 @@ async def login_with_totp(
     )
 
 
-async def verify_totp(db: AsyncSession, user_id: UUID, user_otp_data: UserOtpModel):
+async def verify_totp(
+    db: AsyncSession, user_id: UUID, user_otp_data: UserOtpModel
+) -> User:
     """
     Args:
         db (AsyncSession): Database session
