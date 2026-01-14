@@ -2,14 +2,18 @@ from collections.abc import Sequence
 import logging
 
 from fastapi import HTTPException, status
-from sqlalchemy import desc, select
+from sqlalchemy import delete, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from secure_messenger.auth.dependencies import CurrentUser
 from secure_messenger.core import security
 from secure_messenger.db.models import Message, MessageRecipient, User
-from secure_messenger.messages.schemas import SendMessageModel, ShowMessageModel
+from secure_messenger.messages.schemas import (
+    MessageIDModel,
+    SendMessageModel,
+    ShowMessageModel,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +100,7 @@ async def get_user_messages(
             )
             messages_response.append(
                 ShowMessageModel(
-                    id=recipient.message.id,
+                    message_id=recipient.message.id,
                     sender_username=recipient.message.sender.username,
                     text_content=decrypted_content.decode(),
                     is_read=recipient.is_read,
@@ -108,7 +112,7 @@ async def get_user_messages(
 
             messages_response.append(
                 ShowMessageModel(
-                    id=recipient.message.id,
+                    message_id=recipient.message.id,
                     sender_username=recipient.message.sender.username,
                     text_content='[Błąd deszyfrowania wiadomości]',
                     is_read=recipient.is_read,
@@ -117,3 +121,58 @@ async def get_user_messages(
             )
 
     return messages_response
+
+
+async def delete_message(
+    db: AsyncSession, current_user: CurrentUser, del_message: MessageIDModel
+):
+    query = delete(MessageRecipient).where(
+        MessageRecipient.message_id == del_message.message_id,
+        MessageRecipient.recipient_id == current_user.user_id,
+    )
+    result = await db.execute(query)
+
+    if result.rowcount == 0:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Message with this ID does not exist in user's inbox",
+        )
+    try:
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        logger.warning(e)
+        raise e
+
+
+async def verify_message(
+    db: AsyncSession, current_user: CurrentUser, verif_message: MessageIDModel
+):
+    query = (
+        select(MessageRecipient)
+        .options(joinedload(MessageRecipient.message).joinedload(Message.sender))
+        .where(
+            MessageRecipient.recipient_id == current_user.user_id,
+            MessageRecipient.message_id == verif_message.message_id,
+        )
+    )
+    result = await db.execute(query)
+    recipient: MessageRecipient = result.scalar()
+
+    if not recipient:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail='Message not found'
+        )
+
+    try:
+        security.verify_signature(
+            recipient.message.content_encrypted,
+            recipient.message.sender.public_key,
+            recipient.message.signature,
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Message authenticity could not be verified',
+        ) from e

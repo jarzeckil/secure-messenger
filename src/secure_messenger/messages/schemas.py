@@ -10,8 +10,12 @@ class SendMessageModel(BaseModel):
 
 
 class ShowMessageModel(BaseModel):
-    id: UUID
+    message_id: UUID
     sender_username: str
     text_content: str
     is_read: bool
     timestamp: datetime
+
+
+class MessageIDModel(BaseModel):
+    message_id: UUID

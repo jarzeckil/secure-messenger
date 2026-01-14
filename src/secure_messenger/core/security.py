@@ -212,8 +212,8 @@ def verify_signature(data: bytes, public_key_pem: bytes, signature: bytes) -> No
         data (bytes): message data for which the signature will be verified
         public_key_pem (bytes): public key of user sending the message
         signature (bytes): signature to be verified
-    Returns:
-        bool: verified status of signature
+    Raise:
+        ValueError if not verified
     """
 
     key = RSA.import_key(public_key_pem)
