@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import (
     APIRouter,
     Depends,
@@ -84,6 +86,7 @@ async def delete(
     request: Request,
     db: AsyncSession = Depends(get_db),
     redis_client: redis.Redis = Depends(get_redis),
+    message_id: UUID = Query(description='UUID of message to be marked as read'),
 ):
     """
     Delete a message from the current user's inbox.
@@ -91,7 +94,7 @@ async def delete(
     """
     current_user = await get_current_user(request, redis_client)
 
-    await delete_message(db, current_user, del_message)
+    await delete_message(db, current_user, message_id)
 
     return {'message': 'message deleted successfully'}
 
@@ -102,6 +105,7 @@ async def verify(
     request: Request,
     db: AsyncSession = Depends(get_db),
     redis_client: redis.Redis = Depends(get_redis),
+    message_id: UUID = Query(description='UUID of message to be marked as read'),
 ):
     """
     Verify the authenticity of a message by its signature.
@@ -109,7 +113,7 @@ async def verify(
     """
     current_user = await get_current_user(request, redis_client)
 
-    await verify_message(db, current_user, message)
+    await verify_message(db, current_user, message_id)
 
     return {'message': 'message authenticity verified'}
 
