@@ -39,6 +39,10 @@ async def send(
     db: AsyncSession = Depends(get_db),
     redis_client: redis.Redis = Depends(get_redis),
 ):
+    """
+    Send a message with optional attachments to specified recipients.
+    Returns a confirmation message and a list of missing users.
+    """
     current_user = await get_current_user(request, redis_client)
 
     try:
@@ -63,6 +67,10 @@ async def get_inbox(
     skip: int = Query(0, ge=0, description='Number of messages to skip'),
     limit: int = Query(50, ge=1, le=100, description='Number of messages to download'),
 ):
+    """
+    Retrieve a paginated list of messages for the current user.
+    Returns a list of messages for the user.
+    """
     current_user = await get_current_user(request, redis_client)
 
     messages = await get_user_messages(db, current_user, skip, limit)
@@ -77,6 +85,10 @@ async def delete(
     db: AsyncSession = Depends(get_db),
     redis_client: redis.Redis = Depends(get_redis),
 ):
+    """
+    Delete a message from the current user's inbox.
+    Returns a confirmation message.
+    """
     current_user = await get_current_user(request, redis_client)
 
     await delete_message(db, current_user, del_message)
@@ -91,6 +103,10 @@ async def verify(
     db: AsyncSession = Depends(get_db),
     redis_client: redis.Redis = Depends(get_redis),
 ):
+    """
+    Verify the authenticity of a message by its signature.
+    Returns a confirmation message.
+    """
     current_user = await get_current_user(request, redis_client)
 
     await verify_message(db, current_user, message)
