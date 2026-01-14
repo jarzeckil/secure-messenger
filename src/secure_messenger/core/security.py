@@ -222,3 +222,7 @@ def verify_signature(data: bytes, public_key_pem: bytes, signature: bytes) -> No
     verifier = pss.new(key)
 
     verifier.verify(hashed_data, signature)
+
+
+def get_content_hash(data: bytes) -> bytes:
+    return SHA256.new(data).digest()
