@@ -15,7 +15,6 @@ from secure_messenger.core.config import settings
 from secure_messenger.db.models import Attachment, Message, MessageRecipient, User
 from secure_messenger.messages.schemas import (
     AttachmentInfoModel,
-    MessageIDModel,
     SendMessageModel,
     ShowMessageModel,
 )
@@ -29,6 +28,18 @@ async def send_message(
     message_data: SendMessageModel,
     files: list[UploadFile],
 ) -> list[str]:
+    """
+    Sends a message with optional attachments to specified recipients.
+
+    Args:
+        db (AsyncSession): Database session.
+        current_user (CurrentUser): The user sending the message.
+        message_data (SendMessageModel): Data of the message to send.
+        files (list[UploadFile]): List of files to attach.
+
+    Returns:
+        list[str]: List of usernames that were not found among recipients.
+    """
     if len(files) > 5:
         raise HTTPException(status_code=400, detail='Max file count: 5')
 
@@ -46,8 +57,6 @@ async def send_message(
 
         missing_users = list(recipient_usernames - found_recipient_usernames)
 
-        if missing_users:
-            logger.warning(f'Users do not exist: {missing_users}')
         if not found_recipients:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail='Users do not exist'
@@ -119,6 +128,7 @@ async def send_message(
 
     except Exception as e:
         await db.rollback()
+        logger.error(e)
         raise e
 
     return missing_users
@@ -127,6 +137,18 @@ async def send_message(
 async def get_user_messages(
     db: AsyncSession, current_user: CurrentUser, skip: int, limit: int
 ) -> list[ShowMessageModel]:
+    """
+    Retrieves messages for the current user with pagination.
+
+    Args:
+        db (AsyncSession): Database session.
+        current_user (CurrentUser): The user whose messages are retrieved.
+        skip (int): Number of messages to skip.
+        limit (int): Maximum number of messages to return.
+
+    Returns:
+        list[ShowMessageModel]: List of messages for the user.
+    """
     query = (
         select(MessageRecipient)
         .options(
@@ -180,7 +202,7 @@ async def get_user_messages(
                 ShowMessageModel(
                     message_id=recipient.message.id,
                     sender_username=recipient.message.sender.username,
-                    text_content='[Błąd deszyfrowania wiadomości]',
+                    text_content='[Message decryption error]',
                     is_read=recipient.is_read,
                     timestamp=recipient.message.created_at,
                 )
@@ -189,11 +211,20 @@ async def get_user_messages(
     return messages_response
 
 
-async def delete_message(
-    db: AsyncSession, current_user: CurrentUser, del_message: MessageIDModel
-):
+async def delete_message(db: AsyncSession, current_user: CurrentUser, message_id: UUID):
+    """
+    Deletes a message for the current user by message ID.
+
+    Args:
+        db (AsyncSession): Database session.
+        current_user (CurrentUser): The user deleting the message.
+        message_id (UUID): ID of the message to delete.
+
+    Returns:
+        None
+    """
     query = delete(MessageRecipient).where(
-        MessageRecipient.message_id == del_message.message_id,
+        MessageRecipient.message_id == message_id,
         MessageRecipient.recipient_id == current_user.user_id,
     )
     result = await db.execute(query)
@@ -207,14 +238,24 @@ async def delete_message(
     try:
         await db.commit()
     except Exception as e:
+        logger.error(e)
         await db.rollback()
         logger.warning(e)
         raise e
 
 
-async def verify_message(
-    db: AsyncSession, current_user: CurrentUser, verif_message: MessageIDModel
-):
+async def verify_message(db: AsyncSession, current_user: CurrentUser, message_id: UUID):
+    """
+    Verifies the authenticity of a message by its signature.
+
+    Args:
+        db (AsyncSession): Database session.
+        current_user (CurrentUser): The user verifying the message.
+        message_id (UUID): ID of the message to verify.
+
+    Returns:
+        None
+    """
     query = (
         select(MessageRecipient)
         .options(
@@ -223,7 +264,7 @@ async def verify_message(
         )
         .where(
             MessageRecipient.recipient_id == current_user.user_id,
-            MessageRecipient.message_id == verif_message.message_id,
+            MessageRecipient.message_id == message_id,
         )
     )
     result = await db.execute(query)
