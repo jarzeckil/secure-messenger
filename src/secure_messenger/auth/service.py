@@ -20,7 +20,16 @@ logger = logging.getLogger(__name__)
 
 
 async def register_user(db: AsyncSession, user_data: UserRegisterModel) -> User:
-    """Registers a new user in the database."""
+    """
+    Registers a new user in the database.
+
+    Args:
+        db (AsyncSession): Database session.
+        user_data (UserRegisterModel): Data for the user to register.
+
+    Returns:
+        User: The newly created user object.
+    """
     username = user_data.username
     password = user_data.password
 
@@ -55,7 +64,17 @@ async def register_user(db: AsyncSession, user_data: UserRegisterModel) -> User:
 async def login_user(
     db: AsyncSession, client: redis.Redis, user_login_data: UserLoginModel
 ) -> tuple[UUID, bool]:
-    """Authenticates a user and creates a session."""
+    """
+    Authenticates a user and creates a session.
+
+    Args:
+        db (AsyncSession): Database session.
+        client (redis.Redis): Redis client for session storage.
+        user_login_data (UserLoginModel): Login credentials for the user.
+
+    Returns:
+        tuple[UUID, bool]: Session ID and whether 2FA is enabled for the user.
+    """
     username = user_login_data.username
     password = user_login_data.password
     verified = False
@@ -91,8 +110,20 @@ async def create_user_session(
     username: str,
     private_key_pem: bytes,
     user_2fa: bool,
-):
-    """Creates a new session for the user in Redis."""
+) -> UUID:
+    """
+    Creates a new session for the user in Redis.
+
+    Args:
+        client (redis.Redis): Redis client for session storage.
+        user_id (UUID): ID of the user.
+        username (str): Username of the user.
+        private_key_pem (bytes): User's private key in PEM format.
+        user_2fa (bool): Whether the user has 2FA enabled.
+
+    Returns:
+        UUID: The session ID for the created session.
+    """
     session_id = uuid.uuid4()
 
     session_data = {
