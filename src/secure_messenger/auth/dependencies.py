@@ -16,7 +16,14 @@ async def get_current_user(
     request: Request,
     redis_client: redis.Redis,
 ) -> CurrentUser:
-    """Dependency to get the current authenticated user."""
+    """
+    Retrieves the current authenticated user from the session.
+    Args:
+        request (Request): The HTTP request object containing cookies.
+        redis_client (redis.Redis): Redis client for session lookup.
+    Returns:
+        CurrentUser: The current authenticated user information.
+    """
     user_id, user_data, session_id = await get_current_user_id(request, redis_client)
     otp_pending = user_data.get('pending_2fa')
 
@@ -38,11 +45,12 @@ async def get_current_user_id(
     request: Request, redis_client: redis.Redis
 ) -> tuple[UUID, dict, str]:
     """
+    Retrieves the user ID, user data, and session ID from the session.
     Args:
-        request (Request): The request object
-        redis_client (redis.Redis): Redis client
+        request (Request): The HTTP request object containing cookies.
+        redis_client (redis.Redis): Redis client for session lookup.
     Returns:
-        tuple[str, dict, str]: user_id, user_data, session_id
+        tuple[UUID, dict, str]: User ID, user data dictionary, and session ID string.
     """
     session_id: str = request.cookies.get('session_id')
     if not session_id:
