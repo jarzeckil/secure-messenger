@@ -12,6 +12,7 @@ from secure_messenger.core import security
 from secure_messenger.core.config import settings
 from secure_messenger.db.models import Attachment, Message, MessageRecipient, User
 from secure_messenger.messages.schemas import (
+    AttachmentInfoModel,
     MessageIDModel,
     SendMessageModel,
     ShowMessageModel,
@@ -126,7 +127,10 @@ async def get_user_messages(
 ) -> list[ShowMessageModel]:
     query = (
         select(MessageRecipient)
-        .options(joinedload(MessageRecipient.message).joinedload(Message.sender))
+        .options(
+            joinedload(MessageRecipient.message).joinedload(Message.sender),
+            joinedload(MessageRecipient.message).joinedload(Message.attachments),
+        )
         .where(MessageRecipient.recipient_id == current_user.user_id)
         .order_by(desc(MessageRecipient.created_at))
         .offset(skip)
@@ -134,7 +138,7 @@ async def get_user_messages(
     )
 
     result = await db.execute(query)
-    recipients: Sequence[MessageRecipient] = result.scalars().all()
+    recipients: Sequence[MessageRecipient] = result.scalars().unique().all()
 
     messages_response = []
 
@@ -146,6 +150,17 @@ async def get_user_messages(
             decrypted_content = security.decrypt_content(
                 recipient.message.content_encrypted, aes_key
             )
+            attachments = []
+            for attachment in recipient.message.attachments:
+                attachments.append(
+                    AttachmentInfoModel(
+                        id=attachment.id,
+                        filename=attachment.filename,
+                        content_type=attachment.content_type,
+                        size=attachment.size,
+                    )
+                )
+
             messages_response.append(
                 ShowMessageModel(
                     message_id=recipient.message.id,
@@ -153,6 +168,7 @@ async def get_user_messages(
                     text_content=decrypted_content.decode(),
                     is_read=recipient.is_read,
                     timestamp=recipient.message.created_at,
+                    attachments=attachments,
                 )
             )
         except (ValueError, TypeError, UnicodeDecodeError) as e:
