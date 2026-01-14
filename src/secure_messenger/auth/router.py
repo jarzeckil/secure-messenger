@@ -32,8 +32,17 @@ auth_router = APIRouter()
 
 
 @auth_router.post('/auth/register', status_code=status.HTTP_201_CREATED)
-async def register(user_data: UserRegisterModel, db: AsyncSession = Depends(get_db)):
+async def register(
+    request: Request, user_data: UserRegisterModel, db: AsyncSession = Depends(get_db)
+):
     """Registration endpoint."""
+
+    if request.cookies.items():
+        return HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Log out to register a new user',
+        )
+
     new_user = await register_user(db, user_data)
 
     return {
