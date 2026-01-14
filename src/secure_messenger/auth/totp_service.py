@@ -101,6 +101,11 @@ async def verify_totp(db: AsyncSession, user_id: UUID, user_otp_data: UserOtpMod
     user: User = await db.get(User, user_id)
     otp_code = user_otp_data.code
 
+    if user.totp_secret is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail='User has not enabled 2fa'
+        )
+
     totp = pyotp.TOTP(user.totp_secret)
 
     if not totp.verify(otp_code):
