@@ -5,8 +5,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from secure_messenger.auth.dependencies import get_current_user
 from secure_messenger.db.database import get_db
 from secure_messenger.db.redis_client import get_redis
-from secure_messenger.messages.schemas import SendMessageModel, ShowMessageModel
-from secure_messenger.messages.service import get_user_messages, send_message
+from secure_messenger.messages.schemas import (
+    MessageIDModel,
+    SendMessageModel,
+    ShowMessageModel,
+)
+from secure_messenger.messages.service import (
+    delete_message,
+    get_user_messages,
+    send_message,
+    verify_message,
+)
 
 messages_router = APIRouter()
 
@@ -44,4 +53,29 @@ async def get_inbox(
     return messages
 
 
-# TODO /messages/delete
+@messages_router.delete('/messages/delete', status_code=status.HTTP_200_OK)
+async def delete(
+    del_message: MessageIDModel,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    redis_client: redis.Redis = Depends(get_redis),
+):
+    current_user = await get_current_user(request, redis_client)
+
+    await delete_message(db, current_user, del_message)
+
+    return {'message': 'message deleted successfully'}
+
+
+@messages_router.post('/messages/verify', status_code=status.HTTP_200_OK)
+async def verify(
+    message: MessageIDModel,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    redis_client: redis.Redis = Depends(get_redis),
+):
+    current_user = await get_current_user(request, redis_client)
+
+    await verify_message(db, current_user, message)
+
+    return {'message': 'message authenticity verified'}
