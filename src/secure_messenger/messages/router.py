@@ -1,3 +1,4 @@
+from urllib.parse import quote
 from uuid import UUID
 
 from fastapi import (
@@ -11,6 +12,7 @@ from fastapi import (
     UploadFile,
     status,
 )
+from fastapi.responses import StreamingResponse
 from pydantic import ValidationError
 import redis.asyncio as redis
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,13 +21,14 @@ from secure_messenger.auth.dependencies import get_current_user
 from secure_messenger.db.database import get_db
 from secure_messenger.db.redis_client import get_redis
 from secure_messenger.messages.schemas import (
-    MessageIDModel,
     SendMessageModel,
     ShowMessageModel,
 )
 from secure_messenger.messages.service import (
     delete_message,
     get_user_messages,
+    mark_message_as_read,
+    retrieve_attachment,
     send_message,
     verify_message,
 )
@@ -82,7 +85,6 @@ async def get_inbox(
 
 @messages_router.delete('/messages/delete', status_code=status.HTTP_200_OK)
 async def delete(
-    del_message: MessageIDModel,
     request: Request,
     db: AsyncSession = Depends(get_db),
     redis_client: redis.Redis = Depends(get_redis),
@@ -101,7 +103,6 @@ async def delete(
 
 @messages_router.post('/messages/verify', status_code=status.HTTP_200_OK)
 async def verify(
-    message: MessageIDModel,
     request: Request,
     db: AsyncSession = Depends(get_db),
     redis_client: redis.Redis = Depends(get_redis),
@@ -118,4 +119,47 @@ async def verify(
     return {'message': 'message authenticity verified'}
 
 
-# TODO add read message endpoint
+@messages_router.get('/messages/attachments', status_code=status.HTTP_200_OK)
+async def get_attachment(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    redis_client: redis.Redis = Depends(get_redis),
+    attachment_id: UUID = Query(description='UUID of attachment to download'),
+):
+    """
+    Download an attachment for a message if the user is a recipient.
+    Returns the requested file as a download.
+    """
+    current_user = await get_current_user(request, redis_client)
+
+    content_type, filename, file_stream = await retrieve_attachment(
+        db, current_user, attachment_id
+    )
+
+    encoded_filename = quote(filename)
+
+    return StreamingResponse(
+        content=file_stream,
+        media_type=content_type,
+        headers={
+            'Content-Disposition': f"attachment; filename*=utf-8''{encoded_filename}"
+        },
+    )
+
+
+@messages_router.patch('/messages/mark-as-read', status_code=status.HTTP_200_OK)
+async def mark_as_read(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    redis_client: redis.Redis = Depends(get_redis),
+    message_id: UUID = Query(description='UUID of message to be marked as read'),
+):
+    """
+    Mark a message as read for the current user.
+    Returns a confirmation message.
+    """
+    current_user = await get_current_user(request, redis_client)
+
+    await mark_message_as_read(db, current_user, message_id)
+
+    return {'message': 'Message marked as read successfully'}
