@@ -1,4 +1,15 @@
-from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+    status,
+)
+from pydantic import ValidationError
 import redis.asyncio as redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,13 +34,19 @@ messages_router = APIRouter()
 @messages_router.post('/messages/send', status_code=status.HTTP_201_CREATED)
 async def send(
     request: Request,
-    message_data: SendMessageModel,
+    message_data: str = Form(...),
+    files: list[UploadFile] = File(default=[]),
     db: AsyncSession = Depends(get_db),
     redis_client: redis.Redis = Depends(get_redis),
 ):
     current_user = await get_current_user(request, redis_client)
 
-    missing_users = await send_message(db, current_user, message_data)
+    try:
+        model_data = SendMessageModel.model_validate_json(message_data)
+    except ValidationError as e:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT) from e
+
+    missing_users = await send_message(db, current_user, model_data, files)
 
     return {'message': 'Message sent successfully', 'missing users': missing_users}
 
@@ -79,3 +96,6 @@ async def verify(
     await verify_message(db, current_user, message)
 
     return {'message': 'message authenticity verified'}
+
+
+# TODO add read message endpoint
