@@ -1,8 +1,23 @@
 from datetime import datetime
 import uuid
 
-from sqlalchemy import UUID, Boolean, DateTime, ForeignKey, LargeBinary, String, func
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy import (
+    UUID,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Integer,
+    LargeBinary,
+    String,
+    func,
+)
+from sqlalchemy.orm import (
+    DeclarativeBase,
+    Mapped,
+    deferred,
+    mapped_column,
+    relationship,
+)
 
 
 class Base(DeclarativeBase):
@@ -87,6 +102,10 @@ class Attachment(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     message_id: Mapped[uuid.UUID] = mapped_column(ForeignKey('messages.id'))
-    data_encrypted: Mapped[bytes] = mapped_column(LargeBinary())
+    data_encrypted: Mapped[bytes] = deferred(mapped_column(LargeBinary()))
+
+    filename: Mapped[str] = mapped_column(String, nullable=False)
+    content_type: Mapped[str] = mapped_column(String, nullable=False)
+    size: Mapped[int] = mapped_column(Integer, nullable=False)
 
     message: Mapped['Message'] = relationship(back_populates='attachments')
