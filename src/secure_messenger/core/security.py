@@ -12,9 +12,9 @@ context = CryptContext(schemes=['argon2'])
 def get_password_hash(plain_password: str) -> str:
     """
     Args:
-        plain_password (str): secret
+        plain_password (str): The plain text password to hash.
     Returns:
-        str: hashed secret
+        str: The hashed password string.
     """
     return context.hash(plain_password)
 
@@ -22,18 +22,20 @@ def get_password_hash(plain_password: str) -> str:
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     Args:
-        plain_password (str): secret
-        hashed_password (str): stored hash
+        plain_password (str): The plain text password to verify.
+        hashed_password (str): The hashed password to compare against.
     Returns:
-        bool: is password and hash matching
+        bool: True if the password matches the hash, False otherwise.
     """
     return context.verify(plain_password, hashed_password)
 
 
 def generate_rsa_key_pair() -> tuple[bytes, bytes]:
     """
+    Args:
+        None
     Returns:
-        tuple[bytes, bytes]: a pair of RSA keys
+        tuple[bytes, bytes]: The private and public RSA keys in PEM format.
     """
     private_key = RSA.generate(2048)
     public_key = private_key.public_key()
@@ -44,13 +46,13 @@ def generate_rsa_key_pair() -> tuple[bytes, bytes]:
     return private_key_pem, public_key_pem
 
 
-def _derive_key_from_password_and_salt(password: str, salt: bytes):
+def _derive_key_from_password_and_salt(password: str, salt: bytes) -> bytes:
     """
     Args:
-        password (str): password to derive key from
-        salt (bytes): salt bytes
+        password (str): The password to derive the key from.
+        salt (bytes): The salt to use for key derivation.
     Returns:
-        bytes: derived AES key (SHA-256 digest)
+        bytes: The derived key.
     """
     key = hash_secret_raw(
         secret=password.encode(),
@@ -68,11 +70,11 @@ def _derive_key_from_password_and_salt(password: str, salt: bytes):
 def encrypt_private_key(private_key_pem: bytes, password: str, salt: bytes) -> bytes:
     """
     Args:
-        private_key_pem (bytes): private key in PEM format
-        password (str): password to encrypt with
-        salt (bytes): salt used for key derivation
+        private_key_pem (bytes): Private key in PEM format.
+        password (str): Password to encrypt with.
+        salt (bytes): Salt used for key derivation.
     Returns:
-        bytes: encrypted private key blob (nonce + tag + ciphertext)
+        bytes: Encrypted private key blob (nonce + tag + ciphertext).
     """
     aes_key = _derive_key_from_password_and_salt(password, salt)
 
@@ -85,14 +87,14 @@ def encrypt_private_key(private_key_pem: bytes, password: str, salt: bytes) -> b
     return encrypted_blob
 
 
-def decrypt_private_key(encrypted_blob: bytes, password: str, salt: bytes):
+def decrypt_private_key(encrypted_blob: bytes, password: str, salt: bytes) -> bytes:
     """
     Args:
-        encrypted_blob (bytes): blob produced by encrypt_private_key
-        password (str): password used to decrypt
-        salt (bytes): salt used for key derivation
+        encrypted_blob (bytes): Encrypted private key blob.
+        password (str): Password to decrypt with.
+        salt (bytes): Salt used for key derivation.
     Returns:
-        bytes: decrypted private key PEM
+        bytes: Decrypted private key in PEM format.
     """
     nonce = encrypted_blob[:16]
     tag = encrypted_blob[16:32]
@@ -108,16 +110,20 @@ def decrypt_private_key(encrypted_blob: bytes, password: str, salt: bytes):
 
 def generate_random_aes_key() -> bytes:
     """
+    Args:
+        None
     Returns:
-        bytes: random 32-byte AES key
+        bytes: Randomly generated AES key.
     """
     return get_random_bytes(32)
 
 
 def generate_random_salt() -> bytes:
     """
+    Args:
+        None
     Returns:
-        bytes: random 16-byte salt
+        bytes: Randomly generated salt.
     """
     return get_random_bytes(16)
 
@@ -125,10 +131,10 @@ def generate_random_salt() -> bytes:
 def encrypt_aes_key(aes_key: bytes, public_key_pem: bytes) -> bytes:
     """
     Args:
-        aes_key (bytes): AES key to encrypt
-        public_key_pem (bytes): recipient public key in PEM format
+        aes_key (bytes): AES key to encrypt.
+        public_key_pem (bytes): Recipient's public key in PEM format.
     Returns:
-        bytes: RSA-encrypted AES key
+        bytes: Encrypted AES key.
     """
     pub_key = RSA.import_key(public_key_pem)
     cipher = PKCS1_OAEP.new(pub_key)
@@ -141,10 +147,10 @@ def encrypt_aes_key(aes_key: bytes, public_key_pem: bytes) -> bytes:
 def decrypt_aes_key(encrypted_aes_key: bytes, private_key_pem: bytes) -> bytes:
     """
     Args:
-        encrypted_aes_key (bytes): RSA-encrypted AES key
-        private_key_pem (bytes): recipient private key in PEM format
+        encrypted_aes_key (bytes): Encrypted AES key.
+        private_key_pem (bytes): Private key in PEM format for decryption.
     Returns:
-        bytes: decrypted AES key
+        bytes: Decrypted AES key.
     """
     private_key = RSA.import_key(private_key_pem)
     decipher = PKCS1_OAEP.new(private_key)
@@ -157,10 +163,10 @@ def decrypt_aes_key(encrypted_aes_key: bytes, private_key_pem: bytes) -> bytes:
 def encrypt_content(content: bytes, aes_key: bytes) -> bytes:
     """
     Args:
-        content (bytes): plaintext content
-        aes_key (bytes): AES key for encryption
+        content (bytes): Content to encrypt.
+        aes_key (bytes): AES key to use for encryption.
     Returns:
-        bytes: encrypted blob (nonce + tag + ciphertext)
+        bytes: Encrypted content blob (nonce + tag + ciphertext).
     """
 
     cipher = AES.new(key=aes_key, mode=AES.MODE_GCM)
@@ -174,10 +180,10 @@ def encrypt_content(content: bytes, aes_key: bytes) -> bytes:
 def decrypt_content(encrypted_blob: bytes, aes_key: bytes) -> bytes:
     """
     Args:
-        encrypted_blob (bytes): blob produced by encrypt_content
-        aes_key (bytes): AES key for decryption
+        encrypted_blob (bytes): Encrypted content blob.
+        aes_key (bytes): AES key to use for decryption.
     Returns:
-        bytes: decrypted plaintext content
+        bytes: Decrypted content.
     """
     nonce = encrypted_blob[:16]
     tag = encrypted_blob[16:32]
@@ -192,10 +198,10 @@ def decrypt_content(encrypted_blob: bytes, aes_key: bytes) -> bytes:
 def generate_signature(data: bytes, private_key_pem: bytes) -> bytes:
     """
     Args:
-        data (bytes): message data for which the signature will be created
-        private_key_pem (bytes): private key of user sending the message
+        data (bytes): Data to sign.
+        private_key_pem (bytes): Private key in PEM format for signing.
     Returns:
-        bytes: signature of the message
+        bytes: Signature of the data.
     """
     key = RSA.import_key(private_key_pem)
     hashed_data = SHA256.new(data)
@@ -209,16 +215,25 @@ def generate_signature(data: bytes, private_key_pem: bytes) -> bytes:
 def verify_signature(data: bytes, public_key_pem: bytes, signature: bytes) -> None:
     """
     Args:
-        data (bytes): message data for which the signature will be verified
-        public_key_pem (bytes): public key of user sending the message
-        signature (bytes): signature to be verified
-    Raise:
-        ValueError if not verified
+        data (bytes): Data whose signature is to be verified.
+        public_key_pem (bytes): Public key in PEM format for verification.
+        signature (bytes): Signature to verify.
+    Returns:
+        None: Raises an exception if verification fails.
     """
-
     key = RSA.import_key(public_key_pem)
     hashed_data = SHA256.new(data)
 
     verifier = pss.new(key)
 
     verifier.verify(hashed_data, signature)
+
+
+def get_content_hash(data: bytes) -> bytes:
+    """
+    Args:
+        data (bytes): Data to hash.
+    Returns:
+        bytes: SHA256 hash of the data.
+    """
+    return SHA256.new(data).digest()

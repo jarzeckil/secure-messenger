@@ -32,8 +32,20 @@ auth_router = APIRouter()
 
 
 @auth_router.post('/auth/register', status_code=status.HTTP_201_CREATED)
-async def register(user_data: UserRegisterModel, db: AsyncSession = Depends(get_db)):
-    """Registration endpoint."""
+async def register(
+    request: Request, user_data: UserRegisterModel, db: AsyncSession = Depends(get_db)
+):
+    """
+    Register a new user account.
+    Returns user ID, username, and a success message.
+    Fails if already logged in or username exists.
+    """
+    if request.cookies.items():
+        return HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Log out to register a new user',
+        )
+
     new_user = await register_user(db, user_data)
 
     return {
@@ -54,7 +66,11 @@ async def login(
     db: AsyncSession = Depends(get_db),
     redis_client: redis.Redis = Depends(get_redis),
 ):
-    """Login endpoint."""
+    """
+    Log in a user and set a session cookie.
+    Returns a message and whether 2FA is required.
+    Rate-limited to 5 attempts per minute.
+    """
     session_id, otp_required = await login_user(db, redis_client, user_login_data)
 
     response.set_cookie(
@@ -73,7 +89,10 @@ async def login(
 async def logout(
     request: Request, response: Response, redis_client: redis.Redis = Depends(get_redis)
 ):
-    """Logout endpoint."""
+    """
+    Log out the current user and clear the session cookie.
+    Returns a logout confirmation message.
+    """
     session_id = request.cookies.get('session_id')
 
     if session_id:
@@ -97,13 +116,8 @@ async def setup_2fa(
     redis_client: redis.Redis = Depends(get_redis),
 ):
     """
-    Args:
-        request (Request): The request object
-        user_password_data (UserPasswordModel): The user's password data
-        db (AsyncSession): Database session
-        redis_client (redis.Redis): Redis client
-    Returns:
-        dict: TOTP secret and QR code
+    Set up two-factor authentication (2FA) for the current user.
+    Returns a TOTP secret and a QR code for authenticator apps.
     """
     current_user: CurrentUser = await get_current_user(request, redis_client)
 
@@ -122,13 +136,8 @@ async def enable_2fa(
     redis_client: redis.Redis = Depends(get_redis),
 ):
     """
-    Args:
-        request (Request): The request object
-        user_otp_data (UserOtpModel): The user's OTP data
-        db (AsyncSession): Database session
-        redis_client (redis.Redis): Redis client
-    Returns:
-        dict: Success message
+    Enable two-factor authentication (2FA) for the current user.
+    Returns a success message if the OTP is valid.
     """
     current_user: CurrentUser = await get_current_user(request, redis_client)
 
@@ -149,13 +158,9 @@ async def verify_2fa(
     redis_client: redis.Redis = Depends(get_redis),
 ):
     """
-    Args:
-        request (Request): The request object
-        user_otp_data (UserOtpModel): The user's OTP data
-        db (AsyncSession): Database session
-        redis_client (redis.Redis): Redis client
-    Returns:
-        dict: Success message
+    Verify a two-factor authentication (2FA) code for login.
+    Returns a message if verification is successful.
+    Rate-limited to 5 attempts per minute.
     """
     user_id, _, session_id = await get_current_user_id(request, redis_client)
     if not user_id:

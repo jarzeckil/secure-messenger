@@ -9,12 +9,21 @@ class SendMessageModel(BaseModel):
     text_message: str = Field(description='Text message', min_length=1)
 
 
+class AttachmentInfoModel(BaseModel):
+    id: UUID
+    filename: str
+    content_type: str
+    size: int
+
+
 class ShowMessageModel(BaseModel):
     message_id: UUID
     sender_username: str
     text_content: str
     is_read: bool
     timestamp: datetime
+
+    attachments: list[AttachmentInfoModel] = []
 
 
 class MessageIDModel(BaseModel):

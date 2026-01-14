@@ -52,6 +52,8 @@ extend-immutable-calls = [
     "fastapi.Body",
     "fastapi.Security",
     "fastapi.Header",
+    "fastapi.File",
+    "fastapi.Form",
 ]
 
 [tool.ruff.format]

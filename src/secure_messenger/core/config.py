@@ -20,6 +20,8 @@ class Settings(BaseSettings):
 
     MAX_SESSION_AGE: int = 3600
 
+    MAX_FILE_SIZE: int = 10 * 1024 * 1024
+
     class Config:
         env_file = '.env'
         case_sensitive = True
