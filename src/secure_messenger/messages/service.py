@@ -1,11 +1,13 @@
 from collections.abc import Sequence
+import io
 import logging
 import uuid
+from uuid import UUID
 
 from fastapi import HTTPException, UploadFile, status
 from sqlalchemy import delete, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, undefer
 
 from secure_messenger.auth.dependencies import CurrentUser
 from secure_messenger.core import security
@@ -249,3 +251,93 @@ async def verify_message(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='Message authenticity could not be verified',
         ) from e
+
+
+async def retrieve_attachment(
+    db: AsyncSession, current_user: CurrentUser, attachment_id: UUID
+) -> tuple[str, str, io.BytesIO]:
+    """
+    Retrieves and decrypts an attachment for the current user.
+
+    Args:
+        db (AsyncSession): Database session.
+        current_user (CurrentUser): The user retrieving the attachment.
+        attachment_id (UUID): ID of the attachment to retrieve.
+
+    Returns:
+        tuple[str, str, io.BytesIO]:
+        Content type, filename, and file stream of the attachment.
+    """
+    # get attachment and recipient
+    query = (
+        select(Attachment, MessageRecipient)
+        .join(Message, Attachment.message_id == Message.id)
+        .join(MessageRecipient, Message.id == MessageRecipient.message_id)
+        .options(undefer(Attachment.data_encrypted))
+        .where(
+            Attachment.id == attachment_id,
+            MessageRecipient.recipient_id
+            == current_user.user_id,  # <--- Baza filtruje!
+        )
+    )
+    result = await db.execute(query)
+
+    # check if user can access the attachment AND it exists
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail='Attachment does not exist'
+        )
+
+    attachment: Attachment
+    recipient: MessageRecipient
+    attachment, recipient = result.first()
+
+    try:
+        aes_key = security.decrypt_aes_key(
+            recipient.encrypted_message_key, current_user.private_key
+        )
+        decrypted_content = security.decrypt_content(attachment.data_encrypted, aes_key)
+    except Exception as e:
+        logger.error(f'Decryption failed {e}')
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail='Decryption failed'
+        ) from e
+
+    file_stream = io.BytesIO(decrypted_content)
+
+    return attachment.content_type, attachment.filename, file_stream
+
+
+async def mark_message_as_read(
+    db: AsyncSession, current_user: CurrentUser, message_id: UUID
+) -> None:
+    """
+    Marks a message as read for the current user.
+
+    Args:
+        db (AsyncSession): Database session.
+        current_user (CurrentUser): The user marking the message as read.
+        message_id (UUID): ID of the message to mark as read.
+
+    Returns:
+        None
+    """
+    query = select(MessageRecipient).where(
+        MessageRecipient.message_id == message_id,
+        MessageRecipient.recipient_id == current_user.user_id,
+    )
+    result = await db.execute(query)
+    recipient: MessageRecipient = result.scalar()
+
+    if not recipient:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail='Message does not exist'
+        )
+
+    recipient.is_read = True
+    try:
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        logger.error(e)
+        raise e
