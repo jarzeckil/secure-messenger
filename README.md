@@ -13,6 +13,11 @@
 A secure, end-to-end encrypted messaging web application built with a **Zero Trust** mindset.
 This project implements a **Split Knowledge Architecture**, ensuring that the server never persistently stores unencrypted user private keys.
 
+| Dashboard & Encryption | 2FA Configuration | Secure Verification |
+|:---:|:---:|:---:|
+| <img width="845" alt="ui" src="https://github.com/user-attachments/assets/092fe8d8-2ed2-41b4-bab1-ba137eefa341" /> | <img width="290" alt="2fa_act" src="https://github.com/user-attachments/assets/891e20b8-e160-40ae-8809-eb9fb2e2d751" /> | <img width="410" alt="verif3" src="https://github.com/user-attachments/assets/05d19407-f934-4c1a-be03-bfe6e2c677fc" />
+|
+
 ---
 
 ## 🚀 Key Features
