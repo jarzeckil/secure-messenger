@@ -40,7 +40,7 @@ messages_router = APIRouter()
 async def send(
     request: Request,
     message_data: str = Form(...),
-    files: list[UploadFile] = File(default=[]),
+    files: list[UploadFile] | None = File([]),
     db: AsyncSession = Depends(get_db),
     redis_client: redis.Redis = Depends(get_redis),
 ):
