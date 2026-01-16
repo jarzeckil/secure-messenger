@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import Response
 from fastapi_limiter.depends import RateLimiter
@@ -71,11 +73,21 @@ async def login(
     Returns a message and whether 2FA is required.
     Rate-limited to 5 attempts per minute.
     """
-    session_id, otp_required = await login_user(db, redis_client, user_login_data)
+    session_id, session_key, otp_required = await login_user(
+        db, redis_client, user_login_data
+    )
 
     response.set_cookie(
         key='session_id',
         value=f'{session_id}',
+        httponly=True,
+        secure=True,
+        samesite='lax',
+        max_age=settings.MAX_SESSION_AGE,
+    )
+    response.set_cookie(
+        key='session_key',
+        value=session_key.hex(),
         httponly=True,
         secure=True,
         samesite='lax',
@@ -100,6 +112,12 @@ async def logout(
 
     response.delete_cookie(
         key='session_id',
+        httponly=True,
+        secure=True,
+        samesite='lax',
+    )
+    response.delete_cookie(
+        key='session_key',
         httponly=True,
         secure=True,
         samesite='lax',
@@ -162,13 +180,15 @@ async def verify_2fa(
     Returns a message if verification is successful.
     Rate-limited to 5 attempts per minute.
     """
-    user_id, _, session_id = await get_current_user_id(request, redis_client)
+    user_id, _, session_id, _ = await get_current_user_id(request, redis_client)
     if not user_id:
         if not session_id:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail='Session expired'
             )
 
-    await login_with_totp(db, redis_client, session_id, user_id, user_otp_data)
+    await login_with_totp(
+        db, redis_client, uuid.UUID(session_id), user_id, user_otp_data
+    )
 
     return {'message': 'Successfully verified with 2fa'}
