@@ -935,15 +935,39 @@ const inboxModule = {
         }
     },
 
-    handleLogout() {
+    async handleLogout() {
         if (confirm('Are you sure you want to logout?')) {
-            // Clear stored username
-            localStorage.removeItem('username');
+            try {
+                // Call the logout endpoint
+                const response = await fetch('/auth/logout', {
+                    method: 'POST'
+                });
 
-            showNotification('Logging out...', 'info');
-            setTimeout(() => {
-                window.location.href = '/auth';
-            }, 1000);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    handleAPIError(response, data);
+                    return;
+                }
+
+                // Clear stored username
+                localStorage.removeItem('username');
+
+                showNotification(data.message || 'Logged out successfully', 'success');
+
+                // Redirect to auth page after a short delay
+                setTimeout(() => {
+                    window.location.href = '/auth';
+                }, 1000);
+            } catch (error) {
+                // Even if the API call fails, still log out locally
+                console.error('Logout error:', error);
+                localStorage.removeItem('username');
+                showNotification('Logged out', 'info');
+                setTimeout(() => {
+                    window.location.href = '/auth';
+                }, 1000);
+            }
         }
     },
 
