@@ -22,6 +22,7 @@ dependencies = [
     "pyotp (>=2.9.0,<3.0.0)",
     "qrcode[pil] (>=8.2,<9.0)",
     "fastapi-limiter (>=0.1.6,<0.2.0)",
+    "nh3 (>=0.3.2,<0.4.0)",
 ]
 
 [tool.poetry]
