@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Authentication - Secure Messenger{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="auth-container">
+        <!-- Header with Logo/Branding -->
+        <div class="text-center mb-4">
+            <i class="bi bi-shield-lock-fill auth-logo"></i>
+            <h1 class="auth-brand">SECURE MESSENGER</h1>
+            <p class="text-muted">Encrypted Communication Platform</p>
+        </div>
+
+        <!-- Login Form -->
+        <div id="login-view" class="auth-card">
+            <h3 class="auth-card-title">Login</h3>
+            <form id="login-form">
+                <div class="mb-3">
+                    <label for="login-username" class="form-label">Username</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
+                        <input type="text" class="form-control" id="login-username" required autocomplete="username">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="login-password" class="form-label">Password</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-key-fill"></i></span>
+                        <input type="password" class="form-control" id="login-password" required autocomplete="current-password">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 mb-3">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>Login
+                </button>
+            </form>
+            <div class="text-center">
+                <a href="#" id="show-register" class="text-decoration-none">Don't have an account? <strong>Register</strong></a>
+            </div>
+        </div>
+
+        <!-- Register Form -->
+        <div id="register-view" class="auth-card" style="display: none;">
+            <h3 class="auth-card-title">Create Account</h3>
+            <form id="register-form">
+                <div class="mb-3">
+                    <label for="register-username" class="form-label">Username</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
+                        <input type="text" class="form-control" id="register-username" required autocomplete="username">
+                    </div>
+                    <small class="form-text text-muted">Choose a unique username</small>
+                </div>
+                <div class="mb-3">
+                    <label for="register-password" class="form-label">Password</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-key-fill"></i></span>
+                        <input type="password" class="form-control" id="register-password" required autocomplete="new-password">
+                    </div>
+                    <small class="form-text text-muted">Use a strong password with multiple words</small>
+                </div>
+                <div class="mb-3">
+                    <label for="register-password-confirm" class="form-label">Confirm Password</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-key-fill"></i></span>
+                        <input type="password" class="form-control" id="register-password-confirm" required autocomplete="new-password">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-success w-100 mb-3">
+                    <i class="bi bi-person-plus-fill me-2"></i>Register
+                </button>
+            </form>
+            <div class="text-center">
+                <a href="#" id="show-login" class="text-decoration-none">Already have an account? <strong>Login</strong></a>
+            </div>
+        </div>
+
+        <!-- 2FA Verification Form -->
+        <div id="2fa-verify-view" class="auth-card" style="display: none;">
+            <h3 class="auth-card-title">Two-Factor Authentication</h3>
+            <p class="text-center text-muted mb-4">
+                <i class="bi bi-shield-check" style="font-size: 3rem; color: var(--accent-cyan);"></i>
+            </p>
+            <p class="text-center mb-4">Enter the 6-digit code from your authenticator app</p>
+            <form id="2fa-verify-form">
+                <div class="mb-3">
+                    <label for="2fa-code" class="form-label">Verification Code</label>
+                    <input type="text" class="form-control text-center" id="2fa-code"
+                           pattern="[0-9]{6}" maxlength="6" required autocomplete="one-time-code"
+                           style="font-size: 1.5rem; letter-spacing: 0.5rem;">
+                </div>
+                <button type="submit" class="btn btn-primary w-100 mb-3">
+                    <i class="bi bi-check-circle-fill me-2"></i>Verify
+                </button>
+            </form>
+            <div class="text-center">
+                <a href="#" id="back-to-login" class="text-decoration-none">
+                    <i class="bi bi-arrow-left me-1"></i>Back to Login
+                </a>
+            </div>
+        </div>
+
+        <!-- 2FA Setup Form -->
+        <div id="2fa-setup-view" class="auth-card" style="display: none;">
+            <h3 class="auth-card-title">Enable Two-Factor Authentication</h3>
+            <div id="2fa-setup-content">
+                <p class="text-center mb-4">Confirm your password to set up 2FA</p>
+                <form id="2fa-setup-form">
+                    <div class="mb-3">
+                        <label for="2fa-setup-password" class="form-label">Current Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-key-fill"></i></span>
+                            <input type="password" class="form-control" id="2fa-setup-password" required autocomplete="current-password">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-shield-fill-check me-2"></i>Continue
+                    </button>
+                </form>
+            </div>
+
+            <div id="2fa-qr-display" style="display: none;">
+                <div class="text-center mb-3">
+                    <p class="mb-3">Scan this QR code with your authenticator app</p>
+                    <div class="qr-container mb-3">
+                        <img id="qr-code-image" src="" alt="QR Code" class="img-fluid">
+                    </div>
+                    <div class="alert alert-info">
+                        <strong>Secret Key:</strong>
+                        <code id="totp-secret" class="d-block mt-2"></code>
+                    </div>
+                    <p class="text-muted small">Save this secret key in a safe place as backup</p>
+                </div>
+
+                <!-- Confirmation section -->
+                <div id="2fa-confirm-section" style="display: none;">
+                    <div class="mb-3">
+                        <label for="2fa-confirm-code" class="form-label">Enter code from your authenticator app</label>
+                        <input type="text" class="form-control text-center" id="2fa-confirm-code"
+                               pattern="[0-9]{6}" maxlength="6" required autocomplete="one-time-code"
+                               placeholder="000000"
+                               style="font-size: 1.5rem; letter-spacing: 0.5rem;">
+                        <small class="form-text text-muted">Enter the 6-digit code to confirm setup</small>
+                    </div>
+                </div>
+
+                <button id="2fa-setup-complete" class="btn btn-success w-100">
+                    <i class="bi bi-check-circle-fill me-2"></i>Enable 2FA
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize auth page on load
+    document.addEventListener('DOMContentLoaded', () => {
+        window.authModule.init();
+    });
+</script>
+{% endblock %}

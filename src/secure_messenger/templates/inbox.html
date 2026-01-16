@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block title %}Inbox - Secure Messenger{% endblock %}
+
+{% block content %}
+<div class="inbox-wrapper">
+    <!-- Top Navigation Bar -->
+    <nav class="navbar navbar-dark bg-dark border-bottom">
+        <div class="container-fluid">
+            <span class="navbar-brand">
+                <i class="bi bi-shield-lock-fill me-2"></i>
+                <strong>SECURE MESSENGER</strong>
+            </span>
+            <div class="d-flex align-items-center">
+                <span class="me-3 text-muted">
+                    <i class="bi bi-person-circle me-1"></i>
+                    <span id="current-username">User</span>
+                </span>
+                <button class="btn btn-outline-info btn-sm me-2" id="setup-2fa-btn" title="Setup 2FA">
+                    <i class="bi bi-shield-fill-check"></i>
+                </button>
+                <button class="btn btn-outline-danger btn-sm" id="logout-btn" title="Logout">
+                    <i class="bi bi-box-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <div class="inbox-container">
+        <!-- Left Sidebar - Message List -->
+        <div class="inbox-sidebar">
+            <div class="sidebar-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-inbox-fill me-2"></i>Messages
+                </h5>
+                <button class="btn btn-sm btn-outline-light" id="refresh-messages-btn" title="Refresh">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+            </div>
+
+            <div class="message-list" id="message-list">
+                <!-- Messages will be populated here by JavaScript -->
+                <div class="text-center text-muted p-4">
+                    <i class="bi bi-envelope" style="font-size: 3rem;"></i>
+                    <p class="mt-3">Loading messages...</p>
+                </div>
+            </div>
+
+            <!-- Pagination Controls -->
+            <div class="sidebar-footer">
+                <button class="btn btn-sm btn-outline-secondary" id="prev-page-btn" disabled>
+                    <i class="bi bi-chevron-left"></i> Previous
+                </button>
+                <span class="text-muted small" id="page-info">Page 1</span>
+                <button class="btn btn-sm btn-outline-secondary" id="next-page-btn">
+                    Next <i class="bi bi-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Right Panel - Message Content -->
+        <div class="inbox-content">
+            <div id="no-message-selected" class="d-flex align-items-center justify-content-center h-100">
+                <div class="text-center text-muted">
+                    <i class="bi bi-envelope-open" style="font-size: 5rem; opacity: 0.3;"></i>
+                    <h4 class="mt-4">No Message Selected</h4>
+                    <p>Select a message from the sidebar to view its contents</p>
+                </div>
+            </div>
+
+            <div id="message-detail" class="message-detail" style="display: none;">
+                <!-- Message Header -->
+                <div class="message-header">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h4 class="mb-1">
+                                <i class="bi bi-person-fill me-2"></i>
+                                <span id="detail-sender">Sender</span>
+                            </h4>
+                            <small class="text-muted" id="detail-timestamp">Date</small>
+                        </div>
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-sm btn-outline-success" id="verify-signature-btn" title="Verify Signature">
+                                <i class="bi bi-patch-check-fill"></i> Verify
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary" id="reply-btn" title="Reply">
+                                <i class="bi bi-reply-fill"></i> Reply
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" id="delete-message-btn" title="Delete">
+                                <i class="bi bi-trash-fill"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Message Content -->
+                <div class="message-content">
+                    <div class="message-text" id="detail-content">
+                        Message content will appear here
+                    </div>
+                </div>
+
+                <!-- Attachments Section -->
+                <div id="attachments-section" class="attachments-section" style="display: none;">
+                    <h6 class="mb-3">
+                        <i class="bi bi-paperclip me-2"></i>Attachments
+                    </h6>
+                    <div id="attachments-list" class="attachments-list">
+                        <!-- Attachments will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Action Button for Compose -->
+    <button class="fab" id="compose-btn" title="Compose New Message">
+        <i class="bi bi-pencil-fill"></i>
+    </button>
+</div>
+
+<!-- Compose Message Modal -->
+<div class="modal fade" id="compose-modal" tabindex="-1" aria-labelledby="composeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="composeModalLabel">
+                    <i class="bi bi-pencil-square me-2"></i>Compose Message
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="compose-form">
+                    <div class="mb-3">
+                        <label for="compose-recipients" class="form-label">Recipients</label>
+                        <input type="text" class="form-control" id="compose-recipients"
+                               placeholder="username1, username2, username3..." required>
+                        <small class="form-text text-muted">Separate multiple recipients with commas</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="compose-message" class="form-label">Message</label>
+                        <textarea class="form-control" id="compose-message" rows="8" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="compose-files" class="form-label">
+                            <i class="bi bi-paperclip me-2"></i>Attachments (Max 5 files)
+                        </label>
+                        <input type="file" class="form-control" id="compose-files" multiple>
+                        <small class="form-text text-muted">
+                            <span id="file-count">No files selected</span>
+                        </small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="send-message-btn">
+                    <i class="bi bi-send-fill me-2"></i>Send Message
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 2FA Setup Modal (for when accessed from inbox) -->
+<div class="modal fade" id="2fa-setup-modal" tabindex="-1" aria-labelledby="2faSetupModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="2faSetupModalLabel">
+                    <i class="bi bi-shield-fill-check me-2"></i>Enable Two-Factor Authentication
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="2fa-modal-password-form">
+                    <p>Confirm your password to set up 2FA</p>
+                    <form id="2fa-modal-setup-form">
+                        <div class="mb-3">
+                            <label for="2fa-modal-password" class="form-label">Current Password</label>
+                            <input type="password" class="form-control" id="2fa-modal-password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Continue</button>
+                    </form>
+                </div>
+
+                <div id="2fa-modal-qr-display" style="display: none;">
+                    <div class="text-center">
+                        <p class="mb-3">Scan this QR code with your authenticator app</p>
+                        <div class="qr-container mb-3">
+                            <img id="2fa-modal-qr-image" src="" alt="QR Code" class="img-fluid">
+                        </div>
+                        <div class="alert alert-info">
+                            <strong>Secret Key:</strong>
+                            <code id="2fa-modal-secret" class="d-block mt-2"></code>
+                        </div>
+                        <p class="text-muted small">Save this secret key in a safe place as backup</p>
+                    </div>
+
+                    <!-- Confirmation section -->
+                    <div id="2fa-modal-confirm-section" style="display: none;">
+                        <div class="mb-3">
+                            <label for="2fa-modal-confirm-code" class="form-label">Enter code from your authenticator app</label>
+                            <input type="text" class="form-control text-center" id="2fa-modal-confirm-code"
+                                   pattern="[0-9]{6}" maxlength="6" required autocomplete="one-time-code"
+                                   placeholder="000000"
+                                   style="font-size: 1.5rem; letter-spacing: 0.5rem;">
+                            <small class="form-text text-muted">Enter the 6-digit code to confirm setup</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" id="2fa-modal-complete-btn" style="display: none;">
+                    <i class="bi bi-check-circle-fill me-2"></i>Enable 2FA
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize inbox page on load
+    document.addEventListener('DOMContentLoaded', () => {
+        window.inboxModule.init();
+    });
+</script>
+{% endblock %}
