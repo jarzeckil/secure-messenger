@@ -1,128 +1,147 @@
-# Secure Messenger
+# Secure Messenger 🔒
 
 [![CI Pipeline](https://github.com/jarzeckil/secure-messenger/actions/workflows/ci.yaml/badge.svg)](https://github.com/jarzeckil/secure-messenger/actions/workflows/ci.yaml)
 
+![Python](https://img.shields.io/badge/python-3.11+-blue.svg)
 [![Poetry](https://img.shields.io/endpoint?url=https://python-poetry.org/badge/v0.json)](https://python-poetry.org/)
-![Python](https://img.shields.io/badge/python-3.11-blue)
-![pytest](https://img.shields.io/badge/py-test-blue?logo=pytest)
-![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?logo=docker&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.109+-009688.svg?logo=fastapi&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
+![Nginx](https://img.shields.io/badge/Nginx-009639?logo=nginx&logoColor=white&)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?logo=postgresql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-DC382D?&logo=redis&logoColor=white)
 
-End-to-end encrypted messaging application with server-side key management and cryptographic message verification.
+A secure, end-to-end encrypted messaging web application built with a **Zero Trust** mindset.
+This project implements a **Split Knowledge Architecture**, ensuring that the server never persistently stores unencrypted user private keys.
 
-## Key Features
+---
 
-- **Cryptographic Authentication**: RSA/ECC digital signatures verify message integrity and sender identity
-- **AES-GCM Encryption**: Authenticated encryption for message content (confidentiality + tampering detection)
-- **2FA with TOTP**: Time-based one-time passwords (compatible with Google Authenticator, Authy)
-- **Multi-Recipient Support**: Single message, multiple encrypted copies (via message_recipients association table)
-- **Brute-Force Protection**: Request throttling and Argon2 password hashing with random salts
-- **Input Sanitization**: XSS prevention using `nh3` (Rust-based HTML sanitizer)
-- **Zero Plaintext Storage**: Everything sensitive is encrypted before hitting PostgreSQL
+## 🚀 Key Features
 
-## Architecture
+### 🛡️ Advanced Security Architecture
+* **Split Knowledge Session Management**:
+    * User's RSA private key is stored in Redis **encrypted** with an ephemeral AES key.
+    * The decryption key is sent to the client as a `HttpOnly` cookie and never stored in the database.
+    * **Result:** Even if the Redis instance is compromised, attacker cannot access user keys without the client's cookie.
+* **Cryptographic Agility**:
+    * **Confidentiality:** AES-256-GCM for message content (Encryption + Integrity Tag).
+    * **Non-Repudiation:** RSA-PSS (2048-bit) digital signatures for every message.
+    * **Password Security:** Argon2id hashing with unique per-user salts.
+* **Defense in Depth**:
+    * **2FA:** Time-based One-Time Password (TOTP) implementation compatible with Google Authenticator.
+    * **Throttling:** Rate limiting on auth endpoints (Redis-backed) to prevent Brute-Force attacks.
+    * **Sanitization:** XSS prevention using `nh3` (Rust-based HTML sanitizer).
+* **Holistic Digital Signatures (RSA-PSS):**
+    * Every message is signed using **RSA-PSS** (Probabilistic Signature Scheme), providing stronger security guarantees than legacy PKCS#1 v1.5.
+    * **Tamper-Proof Scope:** The signature calculation includes the encrypted message content **AND** the SHA-256 hashes of all encrypted attachments.
+    * **Verification:** This ensures full integrity and non-repudiation—modifying a single byte of the text or swapping an attachment will cause the signature verification to fail immediately.
+* **Cryptographically Bound Attachments:**
+    * Attachments are treated with the same Zero Trust policy as text messages.
+    * **Encryption:** Each file is encrypted individually using AES-256-GCM with a unique ephemeral key.
+    * **Integrity Binding:** By including attachment hashes in the sender's RSA signature, the system strictly binds files to their parent message, preventing malicious attachment swapping or injection attacks.
 
-```
-┌─────────┐      HTTPS      ┌───────────┐      ┌────────────┐
-│ Client  │ ◄──────────────► │   Nginx   │ ◄───►│  FastAPI   │
-└─────────┘                  │  (TLS)    │      │  Backend   │
-                             └───────────┘      └──────┬─────┘
-                                                       │
-                                                       ▼
-                                                ┌──────────────┐
-                                                │ PostgreSQL   │
-                                                │ (Encrypted)  │
-                                                └──────────────┘
-```
+### 🏗️ Technical Highlights
+* **Asynchronous Core:** Fully async stack using `FastAPI`, `SQLAlchemy 2.0 (Async)`, and `asyncpg`.
+* **Containerization:** Full Docker Compose setup with Nginx (Reverse Proxy with TLS), PostgreSQL, Redis, and the App container.
+* **Type Safety:** Strict typing with Python 3.11+ type hints and Pydantic v2 models.
+* **Testing:** Unit and integration tests using `pytest`.
 
-**Server-Side Encryption Flow:**
-1. User logs in → server decrypts private key in RAM using password-derived key
-2. Performs crypto operation (sign/decrypt)
-3. Wipes key from memory
-4. Password is **never** stored in plaintext on disk
+---
 
-## Tech Stack
+## 🛠️ Tech Stack
 
-| Component         | Technology                      |
-|-------------------|---------------------------------|
-| Backend           | Python 3.11+, FastAPI           |
-| Database          | PostgreSQL + SQLAlchemy         |
-| Crypto            | PyCryptodome (AES-GCM, RSA/ECC) |
-| Password Hashing  | Passlib (Argon2)                |
-| Password Strength | zxcvbn-python                   |
-| 2FA               | PyOTP (TOTP)                    |
-| Sanitization      | nh3 (Rust-backed)               |
-| Frontend          | HTML + Jinja2 + Bootstrap 5     |
-| Deployment        | Docker Compose                  |
+| Component | Technology | Usage |
+|-----------|------------|-------|
+| **Backend** | Python 3.11, **FastAPI** | High-performance async REST API |
+| **Database** | **PostgreSQL** 15 | Relational storage (storing encrypted blobs only) |
+| **ORM** | **SQLAlchemy 2.0** | Async database interaction |
+| **Cache/Session** | **Redis** 7 | Session storage & Rate limiting |
+| **Cryptography** | **PyCryptodome** | Low-level crypto primitives (AES-GCM, RSA) |
+| **Security** | **Passlib (Argon2)**, **PyOTP** | Password hashing & 2FA |
+| **Infrastructure** | **Docker Compose**, Nginx | Deployment & Reverse Proxy |
+| **Frontend** | Jinja2, Bootstrap 5, Vanilla JS | Server-Side Rendering with dynamic interactions |
 
-## Database Schema
+---
 
-**Core Design:** Message entity + recipient association table for multi-recipient support.
+## 📐 Architecture Flow
 
-```
-users
-├── id, username, password_hash
-├── totp_secret, salt
+### 1. The "Split Knowledge" Login Flow
+Instead of keeping the private key in RAM or Disk, we share the responsibility:
 
-user_keys
-├── user_id (FK)
-├── public_key
-└── encrypted_private_key  ← Encrypted with user password
+1.  User logs in.
+2.  Server generates a random **Session Encryption Key (SEK)**.
+3.  Server encrypts User's RSA Private Key using **SEK**.
+4.  Encrypted Blob is stored in **Redis**.
+5.  **SEK** is sent to the user as a secure `session_key` cookie.
+6.  *Server forgets the SEK.*
 
-messages
-├── id, sender_id (FK)
-├── content_encrypted      ← AES-GCM encrypted content
-├── signature              ← RSA/ECC signature for verification
-└── created_at
+### 2. Message Decryption Flow
+1.  Client sends request with `session_key` cookie.
+2.  Server retrieves encrypted blob from Redis.
+3.  Server temporarily decrypts RSA key in memory using the cookie's key.
+4.  Server performs decryption of the message.
+5.  **Memory is wiped** after the request (garbage collection).
+6.  **Integrity Check:** The system verifies the RSA-PSS signature against the sender's public key to confirm the message and its attachments originated from the claimed sender and have not been altered.
+---
 
-message_recipients         ← Association table
-├── message_id (FK)
-├── recipient_id (FK)
-└── is_read                ← Per-recipient status
+## ⚡ Quick Start
 
-attachments
-├── id, message_id (FK)
-└── file_data_encrypted
-```
+### Prerequisites
+* Docker & Docker Compose
+* Make (optional, for convenience commands)
 
-## Security Principles
+### Installation
 
-### Defense in Depth
-- **Transport Layer**: TLS/SSL termination at Nginx
-- **Application Layer**: Input validation (Pydantic), output sanitization (nh3)
-- **Data Layer**: Encrypted blobs only, no plaintext secrets
+1.  **Clone the repository**
+    ```bash
+    git clone [https://github.com/jarzeckil/secure-messenger.git](https://github.com/jarzeckil/secure-messenger.git)
+    cd secure-messenger
+    ```
 
-### Zero Trust Input
-All user input is treated as hostile:
-- Type validation via Pydantic schemas
-- HTML sanitization with `nh3` (prevents XSS)
-- Password entropy checking with `zxcvbn`
+2.  **Environment Setup**
+    Create a `.env` file:
+    ```ini
+    POSTGRES_USER=postgres
+    POSTGRES_PASSWORD=securepassword
+    POSTGRES_DB=messenger
+    ```
 
-### Cryptographic Guarantees
-- **Confidentiality**: AES-GCM symmetric encryption
-- **Integrity**: GCM authentication tag + RSA/ECC signatures
-- **Non-repudiation**: Digital signatures prove message origin (within system trust boundary)
+3. **Generate SSL certificate**
+    ```
+   openssl req -x509 -nodes -days 365 -newkey rsa:2048 \                                                               10s  secure-messenger-py3.13
+    -keyout nginx/certs/nginx.key \
+    -out nginx/certs/nginx.crt
+   ```
 
-## Quick Start
+3.  **Run with Docker**
+    ```bash
+    docker-compose up --build -d
+    ```
+    The application will be available at `https://localhost` (Self-signed certificate handled by Nginx).
+
+### Development (Local)
+
+To run tests or install dependencies locally:
 
 ```bash
-# Clone and start
-git clone git@github.com:jarzeckil/secure-messenger.git
-cd secure-messenger
-docker-compose up --build
-
-# Access at https://localhost
-```
-
-## Development Setup
-
-```bash
-# Install dependencies
+# Install dependencies with Poetry
 make install
 
-# Run tests
+# Run Tests
 make test
+
+# Linting & Formatting
+make format
+
 ```
+## 📂 Project Structure
 
-## Project Status
-
-Project in development
+```
+    src/
+    └── secure_messenger/
+        ├── auth/           # Authentication, 2FA, Session Management (Split Knowledge)
+        ├── core/           # Config, Low-level Security Primitives (AES/RSA helper functions)
+        ├── db/             # Database models and connection logic
+        ├── messages/       # Messaging logic (Send, Read, Attachments)
+        ├── static/         # CSS/JS assets
+        └── templates/      # Jinja2 HTML templates
+```
