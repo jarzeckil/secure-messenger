@@ -1,3 +1,4 @@
+import nh3
 from pydantic import BaseModel, Field, field_validator
 from zxcvbn import zxcvbn
 
@@ -24,6 +25,11 @@ class UserRegisterModel(BaseModel):
             )
 
         return password
+
+    @field_validator('username')
+    @classmethod
+    def sanitize_username(cls, username: str) -> str:
+        return nh3.clean(username)
 
 
 class UserLoginModel(BaseModel):

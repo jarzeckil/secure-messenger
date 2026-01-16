@@ -5,6 +5,7 @@ import uuid
 from uuid import UUID
 
 from fastapi import HTTPException, UploadFile, status
+import nh3
 from sqlalchemy import delete, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, undefer
@@ -55,7 +56,10 @@ async def send_message(
             recipient.username for recipient in found_recipients
         }
 
-        missing_users = list(recipient_usernames - found_recipient_usernames)
+        missing_users_to_sanitize = list(
+            recipient_usernames - found_recipient_usernames
+        )
+        missing_users = [nh3.clean(username) for username in missing_users_to_sanitize]
 
         if not found_recipients:
             raise HTTPException(
@@ -81,7 +85,7 @@ async def send_message(
                 message_id=message_id,
                 data_encrypted=content_encrypted,
                 encrypted_data_hash=content_hash,
-                filename=file.filename,
+                filename=nh3.clean(file.filename),
                 content_type=file.content_type,
                 size=len(content),
             )
