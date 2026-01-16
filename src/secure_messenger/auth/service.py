@@ -39,7 +39,7 @@ async def register_user(db: AsyncSession, user_data: UserRegisterModel) -> User:
     if result.scalar():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail='User with this username already exists',
+            detail='Username is not available',
         )
 
     private_key, public_key = security.generate_rsa_key_pair()
@@ -90,7 +90,7 @@ async def login_user(
     if not user or not verified:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='Wrong username or password.',
+            detail='Incorrect username or password.',
         )
     private_key_encrypted = user.encrypted_private_key
     private_key_pem = security.decrypt_private_key(

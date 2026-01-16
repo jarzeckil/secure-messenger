@@ -31,15 +31,9 @@ async def get_current_user(
     )
     otp_pending = user_data.get('pending_2fa')
 
-    if not user_id:
-        if not session_id:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail='Session expired'
-            )
-
     if otp_pending == 'True':
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail='2fa verification required'
+            status_code=status.HTTP_401_UNAUTHORIZED, detail='2FA verification required'
         )
     private_key = security.decrypt_session_data(
         user_data.get('private_key_encrypted'), session_key
@@ -67,7 +61,7 @@ async def get_current_user_id(
     user_raw_data = await redis_client.get(f'session:{session_id}')
     if not user_raw_data:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Session doesn't exist"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail='Session expired'
         )
     user_data = json.loads(user_raw_data)
     user_id = user_data.get('user_id')
