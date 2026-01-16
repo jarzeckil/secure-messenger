@@ -41,7 +41,7 @@ async def register(
     Fails if already logged in or username exists.
     """
     if request.cookies.items():
-        return HTTPException(
+        raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='Log out to register a new user',
         )
