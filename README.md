@@ -30,12 +30,20 @@ This project implements a **Split Knowledge Architecture**, ensuring that the se
     * **2FA:** Time-based One-Time Password (TOTP) implementation compatible with Google Authenticator.
     * **Throttling:** Rate limiting on auth endpoints (Redis-backed) to prevent Brute-Force attacks.
     * **Sanitization:** XSS prevention using `nh3` (Rust-based HTML sanitizer).
+* **Holistic Digital Signatures (RSA-PSS):**
+    * Every message is signed using **RSA-PSS** (Probabilistic Signature Scheme), providing stronger security guarantees than legacy PKCS#1 v1.5.
+    * **Tamper-Proof Scope:** The signature calculation includes the encrypted message content **AND** the SHA-256 hashes of all encrypted attachments.
+    * **Verification:** This ensures full integrity and non-repudiation—modifying a single byte of the text or swapping an attachment will cause the signature verification to fail immediately.
+* **Cryptographically Bound Attachments:**
+    * Attachments are treated with the same Zero Trust policy as text messages.
+    * **Encryption:** Each file is encrypted individually using AES-256-GCM with a unique ephemeral key.
+    * **Integrity Binding:** By including attachment hashes in the sender's RSA signature, the system strictly binds files to their parent message, preventing malicious attachment swapping or injection attacks.
 
 ### 🏗️ Technical Highlights
 * **Asynchronous Core:** Fully async stack using `FastAPI`, `SQLAlchemy 2.0 (Async)`, and `asyncpg`.
 * **Containerization:** Full Docker Compose setup with Nginx (Reverse Proxy with TLS), PostgreSQL, Redis, and the App container.
 * **Type Safety:** Strict typing with Python 3.11+ type hints and Pydantic v2 models.
-* **Testing:** Unit and integration tests using `pytest` with `aiosqlite` for fast async testing.
+* **Testing:** Unit and integration tests using `pytest`.
 
 ---
 
@@ -72,7 +80,7 @@ Instead of keeping the private key in RAM or Disk, we share the responsibility:
 3.  Server temporarily decrypts RSA key in memory using the cookie's key.
 4.  Server performs decryption of the message.
 5.  **Memory is wiped** after the request (garbage collection).
-
+6.  **Integrity Check:** The system verifies the RSA-PSS signature against the sender's public key to confirm the message and its attachments originated from the claimed sender and have not been altered.
 ---
 
 ## ⚡ Quick Start
@@ -123,3 +131,17 @@ make test
 
 # Linting & Formatting
 make format
+
+```
+## 📂 Project Structure
+
+```
+    src/
+    └── secure_messenger/
+        ├── auth/           # Authentication, 2FA, Session Management (Split Knowledge)
+        ├── core/           # Config, Low-level Security Primitives (AES/RSA helper functions)
+        ├── db/             # Database models and connection logic
+        ├── messages/       # Messaging logic (Send, Read, Attachments)
+        ├── static/         # CSS/JS assets
+        └── templates/      # Jinja2 HTML templates
+```
