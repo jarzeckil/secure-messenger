@@ -44,8 +44,10 @@ services:
     container_name: messenger_nginx
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro,z
+      - ./nginx/certs:/etc/nginx/certs:ro,z
     networks:
       - frontend-network
       - backend-network
