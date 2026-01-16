@@ -3,7 +3,7 @@
 [![CI Pipeline](https://github.com/jarzeckil/secure-messenger/actions/workflows/ci.yaml/badge.svg)](https://github.com/jarzeckil/secure-messenger/actions/workflows/ci.yaml)
 
 [![Poetry](https://img.shields.io/endpoint?url=https://python-poetry.org/badge/v0.json)](https://python-poetry.org/)
-![Python](https://img.shields.io/badge/python-3.1x-blue)
+![Python](https://img.shields.io/badge/python-3.11-blue)
 ![pytest](https://img.shields.io/badge/py-test-blue?logo=pytest)
 ![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?logo=docker&logoColor=white)
 
