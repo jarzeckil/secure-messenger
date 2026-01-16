@@ -32,7 +32,7 @@ async def generate_totp_secret(
     if not security.verify_password(user_password_data.password, user_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='Wrong password.',
+            detail='Incorrect password.',
         )
 
     # create and save totp secret
@@ -105,7 +105,7 @@ async def verify_totp(
 
     if user.totp_secret is None:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail='User has not enabled 2fa'
+            status_code=status.HTTP_400_BAD_REQUEST, detail='User has not enabled 2FA'
         )
 
     totp = pyotp.TOTP(user.totp_secret)
@@ -113,7 +113,7 @@ async def verify_totp(
     if not totp.verify(otp_code):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='2fa code is invalid.',
+            detail='2FA code is invalid.',
         )
 
     return user

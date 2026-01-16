@@ -39,7 +39,7 @@ async def register_user(db: AsyncSession, user_data: UserRegisterModel) -> User:
     if result.scalar():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail='User with this username already exists',
+            detail='Username is not available',
         )
 
     private_key, public_key = security.generate_rsa_key_pair()
@@ -63,7 +63,7 @@ async def register_user(db: AsyncSession, user_data: UserRegisterModel) -> User:
 
 async def login_user(
     db: AsyncSession, client: redis.Redis, user_login_data: UserLoginModel
-) -> tuple[UUID, bool]:
+) -> tuple[UUID, bytes, bool]:
     """
     Authenticates a user and creates a session.
 
@@ -90,18 +90,18 @@ async def login_user(
     if not user or not verified:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='Wrong username or password.',
+            detail='Incorrect username or password.',
         )
     private_key_encrypted = user.encrypted_private_key
     private_key_pem = security.decrypt_private_key(
         private_key_encrypted, password, user.salt
     )
 
-    session_id = await create_user_session(
+    session_id, session_key = await create_user_session(
         client, user.id, user.username, private_key_pem, user.totp_enabled
     )
 
-    return session_id, user.totp_enabled
+    return session_id, session_key, user.totp_enabled
 
 
 async def create_user_session(
@@ -110,7 +110,7 @@ async def create_user_session(
     username: str,
     private_key_pem: bytes,
     user_2fa: bool,
-) -> UUID:
+) -> tuple[UUID, bytes]:
     """
     Creates a new session for the user in Redis.
 
@@ -125,11 +125,16 @@ async def create_user_session(
         UUID: The session ID for the created session.
     """
     session_id = uuid.uuid4()
+    session_key = security.generate_random_aes_key()
+
+    private_key_encrypted_with_sess = security.encrypt_session_data(
+        private_key_pem, session_key
+    )
 
     session_data = {
         'user_id': str(user_id),
         'username': username,
-        'private_key': private_key_pem.decode(),
+        'private_key_encrypted': private_key_encrypted_with_sess,
     }
 
     if user_2fa:
@@ -142,4 +147,4 @@ async def create_user_session(
     )
     logger.info(f'Created session {session_id} for user {user_id} ({username})')
 
-    return session_id
+    return session_id, session_key

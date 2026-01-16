@@ -237,7 +237,7 @@ async def delete_message(db: AsyncSession, current_user: CurrentUser, message_id
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Message with this ID does not exist in user's inbox",
+            detail='Message not found',
         )
     try:
         await db.commit()
@@ -330,7 +330,7 @@ async def retrieve_attachment(
     # check if user can access the attachment AND it exists
     if not result:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail='Attachment does not exist'
+            status_code=status.HTTP_404_NOT_FOUND, detail='Attachment not found'
         )
 
     attachment: Attachment
@@ -376,7 +376,7 @@ async def mark_message_as_read(
 
     if not recipient:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail='Message does not exist'
+            status_code=status.HTTP_400_BAD_REQUEST, detail='Message not found'
         )
 
     recipient.is_read = True

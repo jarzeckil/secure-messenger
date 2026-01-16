@@ -237,3 +237,14 @@ def get_content_hash(data: bytes) -> bytes:
         bytes: SHA256 hash of the data.
     """
     return SHA256.new(data).digest()
+
+
+def encrypt_session_data(data: bytes, key: bytes) -> str:
+    encrypted_blob = encrypt_content(data, key)
+    return encrypted_blob.hex()
+
+
+def decrypt_session_data(encrypted_data_hex: str, key: bytes) -> bytes:
+    encrypted_blob = bytes.fromhex(encrypted_data_hex)
+    decrypted_content = decrypt_content(encrypted_blob, key)
+    return decrypted_content
