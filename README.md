@@ -10,7 +10,7 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?logo=postgresql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-DC382D?&logo=redis&logoColor=white)
 
-A secure, end-to-end encrypted messaging web application built with a **Zero Trust** mindset.
+A secure, SSE messaging web application built with a **Zero Trust** mindset.
 This project implements a **Split Knowledge Architecture**, ensuring that the server never persistently stores unencrypted user private keys.
 
 | Dashboard & Encryption | 2FA Configuration | Secure Verification |
