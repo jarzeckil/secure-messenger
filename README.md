@@ -15,8 +15,12 @@ This project implements a **Split Knowledge Architecture**, ensuring that the se
 
 | Dashboard & Encryption | 2FA Configuration | Secure Verification |
 |:---:|:---:|:---:|
-| <img height="400" alt="ui" src="https://github.com/user-attachments/assets/092fe8d8-2ed2-41b4-bab1-ba137eefa341" /> | <img height="400" alt="2fa_act" src="https://github.com/user-attachments/assets/891e20b8-e160-40ae-8809-eb9fb2e2d751" /> | <img height="400" alt="verif3" src="https://github.com/user-attachments/assets/05d19407-f934-4c1a-be03-bfe6e2c677fc" />
-|
+| <img height="400" alt="ui" src="https://github.com/user-attachments/assets/092fe8d8-2ed2-41b4-bab1-ba137eefa341" /> | <img height="400" alt="2fa_act" src="https://github.com/user-attachments/assets/891e20b8-e160-40ae-8809-eb9fb2e2d751" /> | <img height="400" alt="verif3" src="https://github.com/user-attachments/assets/05d19407-f934-4c1a-be03-bfe6e2c677fc" />|
+
+---
+
+## 🖥️ It's live
+Check out the app by yourself: [deployed via Azure](https://securemessenger.germanywestcentral.cloudapp.azure.com)
 
 ---
 
