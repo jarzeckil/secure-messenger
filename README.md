@@ -19,11 +19,6 @@ This project implements a **Split Knowledge Architecture**, ensuring that the se
 
 ---
 
-## 🖥️ It's live
-Check out the app by yourself: [deployed via Azure](https://securemessenger.germanywestcentral.cloudapp.azure.com)
-
----
-
 ## 🚀 Key Features
 
 ### 🛡️ Advanced Security Architecture
