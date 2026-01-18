@@ -112,7 +112,7 @@ Instead of keeping the private key in RAM or Disk, we share the responsibility:
 
 3. **Generate SSL certificate**
     ```
-   openssl req -x509 -nodes -days 365 -newkey rsa:2048 \                                                               10s  secure-messenger-py3.13
+   openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
     -keyout nginx/certs/nginx.key \
     -out nginx/certs/nginx.crt
    ```
