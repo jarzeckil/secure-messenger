@@ -33,4 +33,4 @@ COPY src ./src
 RUN useradd -m docker && chown -R docker /app
 USER docker
 
-CMD ["uvicorn", "src.secure_messenger.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "src.secure_messenger.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]

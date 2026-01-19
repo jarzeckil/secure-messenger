@@ -25,7 +25,6 @@ services:
   app:
     build: .
     container_name: messenger_app
-    command: uvicorn src.secure_messenger.main:app --host 0.0.0.0 --port 8000
     networks:
       - data-network
       - backend-network
