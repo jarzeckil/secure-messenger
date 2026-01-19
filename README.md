@@ -107,6 +107,7 @@ Instead of keeping the private key in RAM or Disk, we share the responsibility:
     POSTGRES_USER=postgres
     POSTGRES_PASSWORD=securepassword
     POSTGRES_DB=messenger
+    SECRET_KEY=[generate a secure application key]
     ```
 
 3. **Generate SSL certificate**
