@@ -1,3 +1,5 @@
+import re
+
 import nh3
 from pydantic import BaseModel, Field, field_validator
 from zxcvbn import zxcvbn
@@ -30,6 +32,16 @@ class UserRegisterModel(BaseModel):
     @classmethod
     def sanitize_username(cls, username: str) -> str:
         return nh3.clean(username)
+
+    @field_validator('username')
+    @classmethod
+    def validate_username_characters(cls, username: str) -> str:
+        pattern = '^[a-zA-Z0-9_]+$'
+
+        if not re.match(pattern, username):
+            raise ValueError('Username may contain only a-z, A-Z, 0-9 and _')
+
+        return username
 
 
 class UserLoginModel(BaseModel):
