@@ -209,10 +209,15 @@ const authModule = {
             this.showView('login-view');
         });
 
-        document.getElementById('back-to-login')?.addEventListener('click', (e) => {
-            e.preventDefault();
-            this.showView('login-view');
-        });
+        // Logout from 2FA button
+        const logoutFrom2FABtn = document.getElementById('logout-from-2fa');
+        if (logoutFrom2FABtn) {
+            logoutFrom2FABtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.handleLogoutFrom2FA();
+            });
+        }
     },
 
     showView(viewId) {
@@ -456,6 +461,40 @@ const authModule = {
             console.error('2FA confirm error:', error);
             showNotification('Network error. Please try again.', 'error');
         }
+    },
+
+    async handleLogoutFrom2FA() {
+        try {
+            // Call the logout endpoint to clear session cookies
+            const response = await fetch('/auth/logout', {
+                method: 'POST',
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                showNotification(data.message || 'Logged out successfully', 'success');
+            } else {
+                showNotification('Logged out', 'info');
+            }
+        } catch (error) {
+            console.error('Logout error:', error);
+            showNotification('Logged out', 'info');
+        } finally {
+            // Always clear local data and return to login view
+            localStorage.removeItem('username');
+
+            // Clear the 2FA code input
+            const codeInput = document.getElementById('2fa-code');
+            if (codeInput) {
+                codeInput.value = '';
+            }
+
+            // Return to login view
+            setTimeout(() => {
+                this.showView('login-view');
+            }, 500);
+        }
     }
 };
 
@@ -661,12 +700,11 @@ const inboxModule = {
 
         if (!noMessageDiv || !messageDetailDiv) return;
 
-        // FIX: Zamiast style.display, manipulujemy klasami Bootstrapa
-        // Ukrywamy "No Message Selected"
-        noMessageDiv.classList.remove('d-flex'); // Usuwamy flex, żeby nie blokował
-        noMessageDiv.classList.add('d-none');    // Dodajemy klasę ukrywającą
+        // Hide "No Message Selected"
+        noMessageDiv.classList.remove('d-flex');
+        noMessageDiv.classList.add('d-none');
 
-        // Pokazujemy szczegóły wiadomości
+        // Show message details
         messageDetailDiv.style.display = 'block';
 
         // Set message details using innerText for XSS protection
@@ -674,9 +712,6 @@ const inboxModule = {
         const timestampEl = document.getElementById('detail-timestamp');
         const contentEl = document.getElementById('detail-content');
 
-        console.log('detail-sender element:', senderEl);
-        console.log('detail-timestamp element:', timestampEl);
-        console.log('detail-content element:', contentEl);
 
         if (senderEl) senderEl.innerText = message.sender_username;
         if (timestampEl) timestampEl.innerText = new Date(message.timestamp).toLocaleString();
