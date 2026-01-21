@@ -25,3 +25,8 @@ test: ## run tests
 init: ## create poetry environment
 	poetry env use $(PYTHON_VERSION)
 	@echo ">>> Poetry environment created."
+
+clean: ## Delete all compiled Python files
+	find . -type f -name "*.py[co]" -delete
+	find . -type d -name "__pycache__" -delete
+	find . -type d -name ".ruff_cache" -delete
