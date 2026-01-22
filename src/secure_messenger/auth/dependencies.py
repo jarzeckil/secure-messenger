@@ -53,11 +53,12 @@ async def get_current_user_id(
         tuple[UUID, dict, str]: User ID, user data dictionary, and session ID string.
     """
     session_id: str = request.cookies.get('session_id')
-    session_key: bytes = bytes.fromhex(request.cookies.get('session_key'))
-    if not session_id or not session_key:
+    session_key_str: str = request.cookies.get('session_key')
+    if not session_id or not session_key_str:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail='Not authenticated'
         )
+    session_key: bytes = bytes.fromhex(session_key_str)
     user_raw_data = await redis_client.get(f'session:{session_id}')
     if not user_raw_data:
         raise HTTPException(

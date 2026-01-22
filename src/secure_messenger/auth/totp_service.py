@@ -38,6 +38,7 @@ async def generate_totp_secret(
     # create and save totp secret
     totp_secret = pyotp.random_base32()
     user.totp_secret = totp_secret
+    user.totp_enabled = False
 
     await db.commit()
 
