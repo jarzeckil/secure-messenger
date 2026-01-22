@@ -121,9 +121,9 @@ function handleAPIError(response, data) {
             return true;
         }
 
-        // Redirect to 2FA verification if needed
-        if (detail === '2fa verification required') {
-            showNotification(detail, 'error');
+        // Redirect to 2FA verification if needed (case-insensitive check)
+        if (detail.toLowerCase() === '2fa verification required' || detail === '2FA verification required') {
+            showNotification('Please complete 2FA verification', 'info');
             window.location.href = '/auth?view=2fa-verify';
             return true;
         }
@@ -648,7 +648,7 @@ const inboxModule = {
                  data-message-id="${msg.message_id}">
                 <div class="message-item-header">
                     <div class="message-sender">
-                        ${!msg.is_read ? '<span class="unread-indicator"></span>' : ''}
+                        ${!msg.is_read ? '<span class="unread-indicator"></span><strong>[Unread]</strong> ' : ''}
                         <i class="bi bi-person-circle"></i>
                         ${this.escapeHtml(msg.sender_username)}
                     </div>
@@ -822,10 +822,10 @@ const inboxModule = {
             const data = await response.json();
 
             if (!response.ok) {
-                if (handleAPIError(response, data)) {
-                    return;
-                }
-                throw new Error('Failed to send message');
+                // Display specific error message from backend
+                const errorMessage = data?.detail || 'Failed to send message';
+                showNotification(errorMessage, 'error');
+                return;
             }
 
             // Check for missing users in the response (note: backend returns 'missing users' with space)
@@ -847,7 +847,7 @@ const inboxModule = {
             this.loadMessages();
         } catch (error) {
             console.error('Error sending message:', error);
-            showNotification('Failed to send message.', 'error');
+            showNotification('Network error. Please try again.', 'error');
         }
     },
 
